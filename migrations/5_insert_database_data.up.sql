@@ -1,6 +1,6 @@
 INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Joel', '', 'Hartse');
-INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Hannah', 'P', 'Templer');
-INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Marguerite', 'Z', 'Duras');
+INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Hannah', 'P.', 'Templer');
+INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Marguerite', 'Z.', 'Duras');
 INSERT INTO `authors` (`first_name`, `last_name`) VALUES ('Kingsley', 'Amis');
 INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Fannie', 'Peters', 'Flagg');
 INSERT INTO `authors` (`first_name`, `middle_name`, `last_name`) VALUES ('Camille', 'Byron', 'Paglia');
