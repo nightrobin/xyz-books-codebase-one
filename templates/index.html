@@ -21,6 +21,7 @@
                     <th>Publisher</th>
                     <th>Edition</th>
                     <th>List Price</th>
+                    <th>Image URL</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,13 +29,14 @@
                 <tr>
                   <td>{{$book.ID}}</td>
                   <td>{{$book.Title}}</td>
-                  <td></td>
+                  <td>{{$book.Author}}</td>
                   <td>{{$book.Isbn13}}</td>
                   <td>{{$book.Isbn10}}</td>
                   <td>{{$book.PublicationYear}}</td>
-                  <td></td>
+                  <td>{{$book.PublisherName}}</td>
                   <td>{{$book.Edition}}</td>
                   <td>{{$book.ListPrice}}</td>
+                  <td>{{$book.ImageURL}}</td>
                 </tr>
                 {{ end }}
             </tbody>

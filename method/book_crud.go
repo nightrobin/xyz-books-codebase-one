@@ -23,19 +23,25 @@ func BookIndex(c *gin.Context) {
 	go func () {
 		defer wg.Done()
 		
-		var books []model.Book
-		Db.Table("books").Find(&books)
-		
-		// booksJson, err := json.Marshal(books)
-		// if err != nil {
-		// 	fmt.Println(err.Error())
-		// 	return
-		// }
+		type BookDisplay struct {
+			ID				uint64
+			Title			string
+			Author			string
+			Isbn13			string	`gorm:"column:isbn_13"`
+			Isbn10			string	`gorm:"column:isbn_10"`
+			PublicationYear	int16
+			PublisherName	string
+			Edition			string
+			ListPrice		float32
+			ImageURL		string
+		}
 
-		// booksJsonStr := string(booksJson)
+		var books []BookDisplay
+
+		Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Find(&books)
 
 		type PageData struct {
-			Books []model.Book
+			Books []BookDisplay
 		}
 		
 		var data PageData
