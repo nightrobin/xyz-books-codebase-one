@@ -7,6 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
 	xyz-books/dbmigration v0.0.0-00010101000000-000000000000
+	xyz-books/router v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -22,6 +23,8 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.16.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
@@ -34,11 +37,25 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/driver/mysql v1.5.1 // indirect
+	gorm.io/gorm v1.25.4 // indirect
+	xyz-books/method v0.0.0-00010101000000-000000000000 // indirect
+	xyz-books/model v0.0.0-00010101000000-000000000000 // indirect
+	xyz-books/orm v0.0.0-00010101000000-000000000000 // indirect
 )
 
 replace xyz-books/dbmigration => ./dbmigration
+
+replace xyz-books/router => ./router
+
+replace xyz-books/method => ./method
+
+replace xyz-books/orm => ./orm
+
+replace xyz-books/model => ./model

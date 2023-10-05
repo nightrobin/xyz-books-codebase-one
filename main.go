@@ -1,17 +1,19 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
     // "bytes"
-	"html/template"
+	// "html/template"
 	"os"
 	"log"
-	"net/http"
+	// "net/http"
 	"path/filepath"
 
+	"xyz-books/dbmigration"
+	"xyz-books/router"
+	
 	"github.com/joho/godotenv"
 
-	"xyz-books/dbmigration"
 )
 
 
@@ -32,38 +34,40 @@ func main() {
 	dbmigration.ApplyMigrations()
 
 	// Index.html
-	parsedIndexTemplate, err := template.ParseFiles(exPath + "/templates/index.html")
-    if err != nil {
-        log.Fatal(err)
-    }
+	// parsedIndexTemplate, err := template.ParseFiles(exPath + "/templates/index.html")
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
 
-	tmpl := template.Must(parsedIndexTemplate, err)
+	// tmpl := template.Must(parsedIndexTemplate, err)
 
-	type PageData struct {
-		Title string
-		Content string
-	}
+	// type PageData struct {
+	// 	Title string
+	// 	Content string
+	// }
 
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        data := PageData{
-            Title:   "Page Title",
-            Content: "Hello, World!",
-        }
+    // http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    //     data := PageData{
+    //         Title:   "Page Title",
+    //         Content: "Hello, World!",
+    //     }
 
-        // Set the Content-Type header to indicate that we are sending HTML.
-        w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    //     // Set the Content-Type header to indicate that we are sending HTML.
+    //     w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-        // Execute the template and send the result to the client.
-        if err := tmpl.Execute(w, data); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-    })
+    //     // Execute the template and send the result to the client.
+    //     if err := tmpl.Execute(w, data); err != nil {
+    //         http.Error(w, err.Error(), http.StatusInternalServerError)
+    //     }
+    // })
 
 
-	log.Print("Listening on :3000...")
-	err = http.ListenAndServe(":3000", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// log.Print("Listening on :3000...")
+	// err = http.ListenAndServe(":3000", nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	router.GetRouter().Run(fmt.Sprintf("%s:%s", os.Getenv("API_HOST"), os.Getenv("API_PORT")))
 
 }
