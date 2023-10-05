@@ -29,7 +29,6 @@ func ApplyMigrations(){
         "mysql", 
         driver,
     )
-	fmt.Println(m.Up())
 
-    
+	m.Up()
 }
