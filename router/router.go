@@ -17,6 +17,7 @@ import (
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 
+	router.GET("/", method.BookIndex)
 	router.POST("/books", method.AddBook)
 
 	return router

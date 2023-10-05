@@ -4,6 +4,7 @@ go 1.21.1
 
 require (
 	github.com/gin-gonic/gin v1.9.1
+	github.com/joho/godotenv v1.5.1
 	gorm.io/gorm v1.25.4
 	xyz-books/model v0.0.0-00010101000000-000000000000
 	xyz-books/orm v0.0.0-00010101000000-000000000000
