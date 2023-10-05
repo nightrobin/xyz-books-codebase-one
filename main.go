@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"path/filepath"
 
-
 	"github.com/joho/godotenv"
 
 	"xyz-books/dbmigration"
 )
+
 
 func main() {
 	// Load Environment Variables
@@ -30,7 +30,6 @@ func main() {
 
 	// Apply Migrations
 	dbmigration.ApplyMigrations()
-
 
 	// Index.html
 	parsedIndexTemplate, err := template.ParseFiles(exPath + "/templates/index.html")
