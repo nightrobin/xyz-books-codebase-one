@@ -12,5 +12,9 @@ CREATE TABLE `books` (
   UNIQUE KEY `isbn_13_UNIQUE` (`isbn_13`),
   UNIQUE KEY `isbn_10_UNIQUE` (`isbn_10`),
   KEY `books-publisher_id-publisher-id_idx` (`publisher_id`),
+  KEY `title_idx` (`title`),
+  KEY `isbn_13_idx` (`isbn_13`),
+  KEY `isbn_10_idx` (`isbn_10`),
+  KEY `publication_year` (`publication_year`),
   CONSTRAINT `books-publisher_id-publishers-id` FOREIGN KEY (`publisher_id`) REFERENCES `publishers` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
