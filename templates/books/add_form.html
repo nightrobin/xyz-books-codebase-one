@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>XYZ Books</title>
+        <meta charset="utf-8">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> 
+    </head>
+    <body>
+        <div class="p-4">
+            <h1 class="text-center">XYZ Books</h1>
+            <hr/>
+            <h3 class="text-center">Add a new Book</h3>
+            <div class="row p-2">
+                <div class="col-8 mx-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-text">
+                                <div class="table-responsive">
+                                    <form>
+                                        <table class="table table-borderless">
+                                            <tbody>
+                                                <tr>
+                                                    <td><b>Title</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="title" name="title">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Author</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="author" name="author" aria-describedby="authorHelp">
+                                                        <div id="authorHelp" class="form-text">If the author is not on the list, you may Create a new author</div>
+                                                    </td>
+                                                    <td>
+                                                        <a class="btn btn-primary" href="/authors-ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Author</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>ISBN 13</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="isbn-13" name="isbn-13">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>ISBN 10</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="isbn-10" name="isbn-10">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Publication Year</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="publisher-year" name="publisher-year">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Publisher Name</b></td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="publisher-name" name="publisher-name" aria-describedby="publisherHelp">
+                                                        <div id="publisherHelp" class="form-text">If the publisher is not on the list, you may Create a new publisher</div>
+                                                    </td>
+                                                    <td>
+                                                        <a class="btn btn-primary" href="/publishers-ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Publisher</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Edition</td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="edition" name="edition">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>List Price</td>
+                                                    <td>
+                                                        <input type="number" class="form-control" id="price" name="price">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><b>Image URL</td>
+                                                    <td>
+                                                        <input type="text" class="form-control" id="image-url" name="image-url">
+                                                    </td>
+                                                </tr>
+                                                <!-- <tr> -->
+                                                    <!-- <td colspan="2" class="text-center"> -->
+                                                    <!-- </td> -->
+                                                <!-- </tr> -->
+                                            </tbody>
+                                        </table>
+                                        <div class="text-center">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>   
+        </div>
+    </body>
+</html>
