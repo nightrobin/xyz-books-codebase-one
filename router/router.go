@@ -17,9 +17,11 @@ import (
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 
-	router.GET("/", method.BookIndex)
-	router.POST("/books", method.AddBook)
+	router.GET("/", method.UIBookIndex)
+	router.GET("/books-ui/add-form", method.UIAddBookForm)
 	router.GET("/books-ui/view/:isbn_13", method.UIViewBook)
+	router.GET("/publishers-ui/add-form", method.UIAddPublisherForm)
+	router.POST("/publishers-ui/add-form-submit", method.UISubmitAddPublisherForm)
 	// router.GET("/books-ui/update/:isbn_13", method.UIUpdateBook)
 	// router.GET("/books-ui/delete/:isbn_13", method.UIDeleteBook)
 
