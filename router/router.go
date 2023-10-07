@@ -28,9 +28,9 @@ func GetRouter() *gin.Engine {
 
 	booksUI := router.Group("/books-ui")
 	{
-		router.GET("/add-form", method.UIAddBookForm)
-		router.GET("/submit-add-form", method.UISubmitAddBookForm)
-		router.GET("/view/:isbn_13", method.UIViewBook)
+		booksUI.GET("/add-form", method.UIAddBookForm)
+		booksUI.GET("/submit-add-form", method.UISubmitAddBookForm)
+		booksUI.GET("/view/:isbn_13", method.UIViewBook)
 	}
 
 	publishersUI := router.Group("/publishers-ui")
