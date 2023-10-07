@@ -70,7 +70,37 @@ func UIBookIndex(c *gin.Context) {
 }
 
 func UIAddBookForm(c *gin.Context) {
-	c.File(ExPath + "/templates/books/add_form.html")
+	
+	var authors []model.Author
+	Db.Find(&authors)
+
+	var publishers []model.Publisher
+	Db.Find(&publishers)
+
+
+	type PageData struct {
+		Authors []model.Author
+		Publishers []model.Publisher
+	}
+
+	var data PageData
+	data.Authors = authors
+	data.Publishers = publishers
+	
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/add_form.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	return
 }
