@@ -27,7 +27,7 @@ type BookDisplay struct {
 	ImageURL		string
 }
 
-func BookIndex(c *gin.Context) {
+func UIBookIndex(c *gin.Context) {
 
 	var wg sync.WaitGroup
 	
@@ -69,6 +69,37 @@ func BookIndex(c *gin.Context) {
 	return
 }
 
+func UIAddBookForm(c *gin.Context) {
+	c.File(ExPath + "/templates/books/add_form.html")
+
+	return
+}
+
+func UIViewBook(c *gin.Context) {
+	isbn_13 := c.Param("isbn_13")
+
+	var book BookDisplay
+
+	Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
+
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/view_one.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, book); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
 func AddBook(c *gin.Context) {
 	data := model.Book{ID: 1, Title: "Book 1"}
 	response := model.Response[model.Book]{
@@ -77,42 +108,6 @@ func AddBook(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
-	return
-}
-
-func UIViewBook(c *gin.Context) {
-	isbn_13 := c.Param("isbn_13")
-
-	var wg sync.WaitGroup
-	
-	wg.Add(1)
-
-	go func () {
-		defer wg.Done()
-		
-		var book BookDisplay
-
-		Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
-
-		w := c.Writer
-
-		parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/display.html")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpl := template.Must(parsedIndexTemplate, err)
-		
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		if err := tmpl.Execute(w, book); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
-	}()
-	
-	wg.Wait()
-
 	return
 }
 
