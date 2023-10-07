@@ -30,7 +30,7 @@
                                                 <tr>
                                                     <td><b>Author<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <select class="form-select" multiple aria-label="multiple select" aria-describedby="authorHelp" required>
+                                                        <select class="form-select" multiple aria-label="multiple select" name="author-ids[]" aria-describedby="authorHelp" required>
                                                             {{ range $author := .Authors }}
                                                             <option value="{{$author.ID}}">{{$author.FirstName}} {{$author.MiddleName}} {{$author.LastName}}</option>
                                                             {{ end }}
@@ -56,13 +56,13 @@
                                                 <tr>
                                                     <td><b>Publication Year<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="publisher-year" name="publisher-year" required maxlength="4">
+                                                        <input type="text" class="form-control" id="publication-year" name="publication-year" required maxlength="4">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>Publisher Name<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <select class="form-select" aria-label="select" aria-describedby="publisherHelp" required>
+                                                        <select class="form-select" aria-label="select" name="publisher-id" aria-describedby="publisherHelp" required>
                                                             {{ range $publisher := .Publishers }}
                                                             <option value="{{$publisher.ID}}">{{$publisher.Name}}</option>
                                                             {{ end }}
@@ -82,7 +82,7 @@
                                                 <tr>
                                                     <td><b>List Price<span style="color: red;">*</span></td>
                                                     <td>
-                                                        <input type="number" class="form-control" id="price" name="price">
+                                                        <input type="number" class="form-control" id="list-price" name="list-price">
                                                     </td>
                                                 </tr>
                                                 <tr>

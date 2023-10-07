@@ -10,11 +10,11 @@ import(
 	
 	"xyz-books/model"
 
-
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-type BookDisplay struct {
+type bookDisplay struct {
 	ID				uint64
 	Title			string
 	Author			string
@@ -36,12 +36,12 @@ func UIBookIndex(c *gin.Context) {
 	go func () {
 		defer wg.Done()
 		
-		var books []BookDisplay
+		var books []bookDisplay
 
 		Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Find(&books)
 
 		type PageData struct {
-			Books []BookDisplay
+			Books []bookDisplay
 		}
 		
 		var data PageData
@@ -105,10 +105,52 @@ func UIAddBookForm(c *gin.Context) {
 	return
 }
 
+func UISubmitAddBookForm(c *gin.Context) {
+	var book model.Book
+	c.ShouldBind(&book)
+
+	type authorIDs struct {
+		AuthorIDs []uint64 `form:"author-ids[]"`
+	}
+
+	var bookAuthorIDs authorIDs
+	c.ShouldBind(&bookAuthorIDs)
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("books").Create(&book).Error; err != nil {
+
+			c.IndentedJSON(http.StatusOK, "Book NOT SAVED")
+
+			return err
+		}
+
+		for _, v := range bookAuthorIDs.AuthorIDs {
+			var bookAuthor model.BookAuthor
+			bookAuthor.BookID = book.ID
+			bookAuthor.AuthorID = v
+
+			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+
+				c.IndentedJSON(http.StatusOK, "Books Author NOT SAVED")
+	
+				return err
+			}
+
+		}
+
+		return nil
+	})
+
+	c.IndentedJSON(http.StatusOK, "OK")
+
+
+	return
+}
+
 func UIViewBook(c *gin.Context) {
 	isbn_13 := c.Param("isbn_13")
 
-	var book BookDisplay
+	var book bookDisplay
 
 	Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
 
