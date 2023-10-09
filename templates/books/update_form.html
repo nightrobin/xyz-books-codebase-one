@@ -18,7 +18,8 @@
                         <div class="card-body">
                             <div class="card-text">
                                 <div class="table-responsive">
-                                    <form action="/books-ui/submit-add-form" method="POST">
+                                    <form action="/books-ui/submit-update-form/{{.Book.Isbn13}}" method="POST">
+                                        <input type="hidden" name="ID" value="{{.Book.ID}}">
                                         <table class="table table-borderless">
                                             <tbody>
                                                 <tr>
@@ -46,15 +47,15 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td><b>ISBN 13<span style="color: red;">*</span></b></td>
+                                                    <td><b>ISBN 13</b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="isbn-13" name="isbn-13" value="{{.Book.Isbn13}}" required minlength="13" maxlength="13">
+                                                        <input type="text" class="form-control" id="isbn-13" name="isbn-13" value="{{.Book.Isbn13}}" readonly disabled minlength="13" maxlength="13">
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td><b>ISBN 10<span style="color: red;">*</span></b></td>
+                                                    <td><b>ISBN 10</b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="isbn-10" name="isbn-10" value="{{.Book.Isbn10}}" required minlength="10" maxlength="10">
+                                                        <input type="text" class="form-control" id="isbn-10" name="isbn-10" value="{{.Book.Isbn10}}" readonly disabled minlength="10" maxlength="10">
                                                     </td>
                                                 </tr>
                                                 <tr>

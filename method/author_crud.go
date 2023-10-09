@@ -41,7 +41,8 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 		return nil
 	})
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	// c.Redirect(http.StatusFound, "/authors-ui/add-form?success=true")
+	// c.IndentedJSON(http.StatusOK, "OK")
 
 	// c.JSON(200, gin.H{"name": publisherForm.Name})
 	// c.File(ExPath + "/templates/publishers/add_form.html")

@@ -196,8 +196,7 @@ func UIUpdateBookForm(c *gin.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Print(parsedIndexTemplate.Funcs(template.FuncMap{"CheckIfIDIsInExistingAuthorIDs": CheckIfIDIsInExistingAuthorIDs}))
-	// tmpl := template.Must(parsedIndexTemplate.Funcs(template.FuncMap{"CheckIfIDIsInExistingAuthorIDs": checkIfIDIsInExistingAuthorIDs}), err)
+
 	tmpl := template.Must(parsedIndexTemplate, err)
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -205,6 +204,68 @@ func UIUpdateBookForm(c *gin.Context) {
 	if err := tmpl.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+
+	return
+}
+
+func UISubmitUpdateBookForm(c *gin.Context) {
+	isbn_13 := c.Param("isbn_13")
+
+	var book model.Book
+	c.ShouldBind(&book)
+
+	type authorIDs struct {
+		AuthorIDs []uint64 `form:"author-ids[]"`
+	}
+
+	var bookAuthorIDs authorIDs
+	c.ShouldBind(&bookAuthorIDs)
+	
+	var existingBook model.Book
+	Db.Where("isbn_13 = ?", isbn_13).First(&existingBook)
+
+	existingBook.Title = book.Title
+	existingBook.PublicationYear = book.PublicationYear
+	existingBook.PublisherID = book.PublisherID
+	existingBook.ImageURL = book.ImageURL
+	existingBook.Edition = book.Edition
+	existingBook.ListPrice = book.ListPrice
+
+	Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Save(&existingBook).Error; err != nil {
+
+			c.IndentedJSON(http.StatusOK, "Book Details NOT UPDATED")
+			return err
+
+		}
+
+		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
+			
+			c.IndentedJSON(http.StatusOK, "Existing Books Authors NOT DELETED")
+			return err
+
+		}
+
+		for _, v := range bookAuthorIDs.AuthorIDs {
+
+			var bookAuthor model.BookAuthor
+			bookAuthor.BookID = book.ID
+			bookAuthor.AuthorID = v
+
+			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+
+				c.IndentedJSON(http.StatusOK, "Books Author NOT UPDATED")
+				return err
+
+			}
+		}
+
+		return nil
+	})
+
+	c.IndentedJSON(http.StatusOK, "OK")
+
 
 	return
 }
