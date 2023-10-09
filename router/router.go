@@ -18,13 +18,14 @@ func GetRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/", method.UIBookIndex)
+	router.GET("/insert-records", method.UIAddRecords) // Use to add huge number of records. For testing uses.
 	
 	authorsUI := router.Group("/authors-ui")
 	{
 		authorsUI.GET("/add-form", method.UIAddAuthorForm)
 		authorsUI.POST("/submit-add-form", method.UISubmitAddAuthorForm)
 	}
-
+	
 	booksUI := router.Group("/books-ui")
 	{
 		booksUI.GET("/add-form", method.UIAddBookForm)
