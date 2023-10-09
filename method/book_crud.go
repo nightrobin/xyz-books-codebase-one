@@ -27,6 +27,19 @@ type bookDisplay struct {
 	ImageURL		string
 }
 
+type bookUpdateDisplay struct {
+	ID				uint64
+	Title			string
+	AuthorID		uint64
+	Isbn13			string	`gorm:"column:isbn_13"`
+	Isbn10			string	`gorm:"column:isbn_10"`
+	PublicationYear	int16
+	PublisherID		uint64
+	Edition			string
+	ListPrice		float32
+	ImageURL		string
+}
+
 func UIBookIndex(c *gin.Context) {
 
 	var wg sync.WaitGroup
@@ -145,6 +158,65 @@ func UISubmitAddBookForm(c *gin.Context) {
 
 
 	return
+}
+
+func UIUpdateBookForm(c *gin.Context) {
+	isbn_13 := c.Param("isbn_13")
+	
+	var book model.Book
+	Db.Where("isbn_13 = ?", isbn_13).First(&book)
+
+	var bookAuthors []model.BookAuthor
+	Db.Where("book_id = ?", book.ID).Find(&bookAuthors)
+
+	var authors []model.Author
+	Db.Find(&authors)
+
+	var publishers []model.Publisher
+	Db.Find(&publishers)
+
+	type PageData struct {
+		Book model.Book
+		Authors []model.Author
+		Publishers []model.Publisher
+	}
+
+	var data PageData
+	data.Book = book
+	data.Publishers = publishers
+	
+	data.Authors = authors
+	for i, v := range data.Authors {
+		data.Authors[i].IsSelected = checkIfIDIsInExistingAuthorIDs(v.ID, bookAuthors)
+    }
+	
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/update_form.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// fmt.Print(parsedIndexTemplate.Funcs(template.FuncMap{"CheckIfIDIsInExistingAuthorIDs": CheckIfIDIsInExistingAuthorIDs}))
+	// tmpl := template.Must(parsedIndexTemplate.Funcs(template.FuncMap{"CheckIfIDIsInExistingAuthorIDs": checkIfIDIsInExistingAuthorIDs}), err)
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
+func checkIfIDIsInExistingAuthorIDs(authorID uint64, bookAuthors []model.BookAuthor) bool {
+	var isFound bool = false
+	for _, v := range bookAuthors {
+        if v.AuthorID == authorID {
+            isFound = true
+        }
+    }
+    return isFound
 }
 
 func UIViewBook(c *gin.Context) {
