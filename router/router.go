@@ -19,7 +19,6 @@ func GetRouter() *gin.Engine {
 
 	router.GET("/", method.UIBookIndex)
 	
-
 	authorsUI := router.Group("/authors-ui")
 	{
 		authorsUI.GET("/add-form", method.UIAddAuthorForm)

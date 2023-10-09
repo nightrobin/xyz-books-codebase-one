@@ -6,6 +6,7 @@ import(
 	"html/template"
 	"net/http"
 	"log"
+	"strings"
 	"sync"
 	
 	"xyz-books/model"
@@ -42,6 +43,10 @@ type bookUpdateDisplay struct {
 
 func UIBookIndex(c *gin.Context) {
 
+	keyword := c.DefaultQuery("keyword", "")
+	keyword = strings.TrimLeft(keyword, " ") 
+	keyword = strings.TrimRight(keyword, " ") 
+
 	var wg sync.WaitGroup
 	
 	wg.Add(1)
@@ -50,8 +55,25 @@ func UIBookIndex(c *gin.Context) {
 		defer wg.Done()
 		
 		var books []bookDisplay
+		
+		if (len(keyword) != 0){
+		
+			havingString := " title LIKE '%" + keyword + "%' " 
+			havingString = " isbn_13 LIKE '%" + keyword + "%' " 
+			havingString = " isbn_10 LIKE '%" + keyword + "%' " 
+			havingString = havingString + " OR author LIKE '%" + keyword + "%' "
+			havingString = havingString + " OR publication_year LIKE '%" + keyword + "%' "
+			havingString = havingString + " OR publisher_name LIKE '%" + keyword + "%' "
+			
+			// fmt.Print(havingString)
+			// return
 
-		Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Find(&books)
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Having(havingString).Find(&books)
+		
+		} else {
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Find(&books)
+		}
+
 
 		type PageData struct {
 			Books []bookDisplay
