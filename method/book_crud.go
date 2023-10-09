@@ -305,6 +305,39 @@ func UIViewBook(c *gin.Context) {
 	return
 }
 
+func UIDeleteBook(c *gin.Context) {
+	isbn_13 := c.Param("isbn_13")
+
+	var book model.Book
+	result := Db.Where("isbn_13 = ?", isbn_13).First(&book)
+
+	if result.Error == gorm.ErrRecordNotFound {
+		c.IndentedJSON(http.StatusNotFound, "Book NOT found")
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
+			
+			c.IndentedJSON(http.StatusNotFound, "Existing Books Authors NOT found")
+			return err
+
+		}
+
+		if err := tx.Unscoped().Delete(&book).Error; err != nil {
+
+			c.IndentedJSON(http.StatusNotFound, "Book NOT DELETED")
+			return err
+
+		}
+
+		return nil
+	})
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
 func AddBook(c *gin.Context) {
 	data := model.Book{ID: 1, Title: "Book 1"}
 	response := model.Response[model.Book]{
@@ -314,13 +347,4 @@ func AddBook(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, response)
 	return
-}
-
-func ReadBook(c *gin.Context) {
-}
-
-func UpdateBook() {
-}
-
-func DeleteBook() {
 }
