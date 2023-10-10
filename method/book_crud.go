@@ -1,11 +1,12 @@
 package method
 
 import(
-	// "fmt"
+	"fmt"
 	// "encoding/json"
 	"html/template"
 	"net/http"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	
@@ -46,6 +47,11 @@ func UIBookIndex(c *gin.Context) {
 	keyword := c.DefaultQuery("keyword", "")
 	keyword = strings.TrimLeft(keyword, " ") 
 	keyword = strings.TrimRight(keyword, " ") 
+	
+	pageNumber, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
+	currentPageNumber := pageNumber
+	pageNumber = (pageNumber - 1) * 10000
+	limit := 10000
 
 	var wg sync.WaitGroup
 	
@@ -55,6 +61,8 @@ func UIBookIndex(c *gin.Context) {
 		defer wg.Done()
 		
 		var books []bookDisplay
+		// var countResult *gorm.DB 
+		var count int64
 		
 		if (len(keyword) != 0){
 		
@@ -65,23 +73,42 @@ func UIBookIndex(c *gin.Context) {
 			havingString = havingString + " OR publication_year LIKE '%" + keyword + "%' "
 			havingString = havingString + " OR publisher_name LIKE '%" + keyword + "%' "
 			
-			// fmt.Print(havingString)
-			// return
-
-			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Having(havingString).Find(&books)
+			
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Having(havingString).Count(&count)
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Having(havingString).Limit(limit).Offset(pageNumber).Find(&books)
 		
 		} else {
-			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Find(&books)
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Count(&count)
+			Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Limit(limit).Offset(pageNumber).Find(&books)
 		}
 
 
 		type PageData struct {
 			Books []bookDisplay
+			PageNumbers []int
+			CurrentPage int
+			IsNextEnabled bool
 		}
 		
 		var data PageData
 		data.Books = books
+		
+		numberOfPages := count / 10000
 
+		var pageNumbers []int
+		for i := 0; i < int(numberOfPages); i++ {
+			pageNumbers = append(pageNumbers, i+1)
+		}
+
+		data.PageNumbers = pageNumbers
+		data.CurrentPage = currentPageNumber
+		data.IsNextEnabled = true
+		if (int(numberOfPages) - currentPageNumber) < 10 {
+			data.IsNextEnabled = false
+		}
+
+		fmt.Println("")
+		
 		w := c.Writer
 
 		parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/index.html")
