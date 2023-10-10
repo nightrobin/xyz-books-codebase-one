@@ -341,7 +341,7 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 			return err
 		}
 
-		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
+		if err := tx.Table("book_authors").Where("book_id = ?", existingBook.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
 			return err
 		}
 
