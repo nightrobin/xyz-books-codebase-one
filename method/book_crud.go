@@ -17,7 +17,7 @@ import(
 	"gorm.io/gorm"
 )
 
-type bookDisplay struct {
+type BookDisplay struct {
 	ID				uint64
 	Title			string
 	Author			string
@@ -30,17 +30,12 @@ type bookDisplay struct {
 	ImageURL		string
 }
 
-type bookUpdateDisplay struct {
-	ID				uint64
-	Title			string
-	AuthorID		uint64
-	Isbn13			string	`gorm:"column:isbn_13"`
-	Isbn10			string	`gorm:"column:isbn_10"`
-	PublicationYear	int16
-	PublisherID		uint64
-	Edition			string
-	ListPrice		float32
-	ImageURL		string
+type AuthorDisplay struct {
+	ID			uint64 `gorm:"primaryKey"`
+	FirstName	string
+	MiddleName	string
+	LastName	string
+	IsSelected  bool
 }
 
 func UIBookIndex(c *gin.Context) {
@@ -62,7 +57,7 @@ func UIBookIndex(c *gin.Context) {
 	go func () {
 		defer wg.Done()
 		
-		var books []bookDisplay
+		var books []BookDisplay
 		var count int64
 		
 		if (len(keyword) != 0){
@@ -85,7 +80,7 @@ func UIBookIndex(c *gin.Context) {
 
 		type PageData struct {
 			Keyword string
-			Books []bookDisplay
+			Books []BookDisplay
 			PageNumbers []int64
 			CountShownPageNumber int64
 			CurrentPage int64
@@ -264,15 +259,15 @@ func UIUpdateBookForm(c *gin.Context) {
 	var bookAuthors []model.BookAuthor
 	Db.Where("book_id = ?", book.ID).Find(&bookAuthors)
 
-	var authors []model.Author
-	Db.Find(&authors)
+	var authors []AuthorDisplay
+	Db.Table("authors").Find(&authors)
 
 	var publishers []model.Publisher
 	Db.Find(&publishers)
 
 	type PageData struct {
 		Book model.Book
-		Authors []model.Author
+		Authors []AuthorDisplay
 		Publishers []model.Publisher
 	}
 
@@ -394,7 +389,7 @@ func checkIfIDIsInExistingAuthorIDs(authorID uint64, bookAuthors []model.BookAut
 func UIViewBook(c *gin.Context) {
 	isbn_13 := c.Param("isbn_13")
 
-	var book bookDisplay
+	var book BookDisplay
 
 	Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
 
