@@ -22,13 +22,13 @@
                         <div class="card-body">
                             <div class="card-text">
                                 <div class="table-responsive">
-                                    <form action="/publishers-ui/submit-update-form" method="POST">
+                                    <form action="/publishers-ui/submit-update-form/{{.ID}}" method="POST">
                                         <table class="table table-borderless">
                                             <tbody>
                                                 <tr>
                                                     <td><b>Name<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="name" name="name" value="{{ .Name }}" required maxlength="255">
+                                                        <input type="text" class="form-control" id="name" name="Name" value="{{ .Name }}" required maxlength="255">
                                                     </td>
                                                 </tr>
                                             </tbody>

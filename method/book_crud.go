@@ -326,41 +326,57 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 	existingBook.Edition = book.Edition
 	existingBook.ListPrice = book.ListPrice
 
-	Db.Transaction(func(tx *gorm.DB) error {
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully updated Book"
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 	
 		if err := tx.Save(&existingBook).Error; err != nil {
-
-			c.IndentedJSON(http.StatusOK, "Book Details NOT UPDATED")
 			return err
-
 		}
 
 		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
-			
-			c.IndentedJSON(http.StatusOK, "Existing Books Authors NOT DELETED")
 			return err
-
 		}
 
 		for _, v := range bookAuthorIDs.AuthorIDs {
 
 			var bookAuthor model.BookAuthor
-			bookAuthor.BookID = book.ID
+			bookAuthor.BookID = existingBook.ID
 			bookAuthor.AuthorID = v
 
 			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
-
-				c.IndentedJSON(http.StatusOK, "Books Author NOT UPDATED")
 				return err
-
 			}
+			
 		}
 
 		return nil
 	})
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	if transactionErr != nil {
+		pageData.Message = "Cannot update Book." 
+		pageData.HasError = true
+	}
 
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	return
 }

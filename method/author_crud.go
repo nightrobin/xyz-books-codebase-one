@@ -207,6 +207,58 @@ func UIUpdateAuthorForm(c *gin.Context) {
 	return
 }
 
+func UISubmitUpdateAuthorForm(c *gin.Context) {
+	ID := c.Param("id")
+
+	var author model.Author
+	c.ShouldBind(&author)
+
+	var existingAuthor model.Author
+	Db.Where("id = ?", ID).First(&existingAuthor)
+
+	existingAuthor.FirstName = author.FirstName
+	existingAuthor.MiddleName = author.MiddleName
+	existingAuthor.LastName = author.LastName
+
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully updated Author"
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Save(&existingAuthor).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if transactionErr != nil {
+		pageData.Message = "Cannot update Author." 
+		pageData.HasError = true
+	}
+
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
 func UIViewAuthor(c *gin.Context) {
 	ID := c.Param("id")
 

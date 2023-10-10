@@ -26,6 +26,7 @@ func GetRouter() *gin.Engine {
 		authorsUI.GET("/add-form", method.UIAddAuthorForm)
 		authorsUI.POST("/submit-add-form", method.UISubmitAddAuthorForm)
 		authorsUI.GET("/update-form/:id", method.UIUpdateAuthorForm)
+		authorsUI.POST("/submit-update-form/:id", method.UISubmitUpdateAuthorForm)
 		authorsUI.GET("/view/:id", method.UIViewAuthor)		
 		authorsUI.GET("/delete/:id", method.UIDeleteAuthor)
 	}
@@ -46,6 +47,7 @@ func GetRouter() *gin.Engine {
 		publishersUI.GET("/add-form", method.UIAddPublisherForm)
 		publishersUI.POST("/submit-add-form", method.UISubmitAddPublisherForm)
 		publishersUI.GET("/update-form/:id", method.UIUpdatePublisherForm)
+		publishersUI.POST("/submit-update-form/:id", method.UISubmitUpdatePublisherForm)
 		publishersUI.GET("/view/:id", method.UIViewPublisher)
 		publishersUI.GET("/delete/:id", method.UIDeletePublisher)
 	}

@@ -1,7 +1,7 @@
 package method
 
 import(
-	// "fmt"
+	"fmt"
 	// "encoding/json"
 	"html/template"
 	"log"
@@ -196,6 +196,58 @@ func UIUpdatePublisherForm(c *gin.Context) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if err := tmpl.Execute(w, publisher); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
+func UISubmitUpdatePublisherForm(c *gin.Context) {
+	ID := c.Param("id")
+
+	var publisher model.Publisher
+	c.ShouldBind(&publisher)
+
+	var existingPublisher model.Publisher
+	Db.Where("id = ?", ID).First(&existingPublisher)
+
+	fmt.Print("")
+
+	existingPublisher.Name = publisher.Name
+
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully updated Publisher"
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Save(&existingPublisher).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if transactionErr != nil {
+		pageData.Message = "Cannot update Publisher." 
+		pageData.HasError = true
+	}
+
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
