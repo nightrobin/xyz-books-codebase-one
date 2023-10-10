@@ -33,7 +33,7 @@ func UIAddRecords(c *gin.Context) {
 				book.Isbn10 = strconv.FormatUint(1000000000 + i, 10)
 				book.PublicationYear = 2001
 				book.PublisherID = 3
-				book.ImageURL = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg/800px-Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg?20100403094921"
+				book.ImageURL = "https://www.collinsdictionary.com/images/full/book_181404689_1000.jpg"
 				book.Edition = "Book " + book.Isbn10
 				book.ListPrice = float32(1000 + i)
 
