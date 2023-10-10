@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"xyz-books/orm"
 	
@@ -14,6 +15,9 @@ import (
 
 var Db *gorm.DB
 var ExPath string
+
+var recordLimitPerPage int
+var countShownPageNumber int
 
 func init() {
 	Db = orm.ConnectToDB()
@@ -29,4 +33,7 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	recordLimitPerPage, _ = strconv.Atoi(os.Getenv("RECORD_LIMIT_PER_PAGE"))
+	countShownPageNumber, _ = strconv.Atoi(os.Getenv("COUNT_SHOWN_PAGE_NUMBER"))
 }

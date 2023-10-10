@@ -6,8 +6,6 @@ import(
 	"html/template"
 	"net/http"
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,28 +14,8 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
-
-var recordLimitPerPage int
-var countShownPageNumber int
-
-func init(){
-	ex, err := os.Executable()
-    if err != nil {
-        panic(err)
-    }
-    exPath := filepath.Dir(ex)
-
-	err = godotenv.Load(exPath + "/.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	recordLimitPerPage, _ = strconv.Atoi(os.Getenv("RECORD_LIMIT_PER_PAGE"))
-	countShownPageNumber, _ = strconv.Atoi(os.Getenv("COUNT_SHOWN_PAGE_NUMBER"))
-}
 
 type bookDisplay struct {
 	ID				uint64
@@ -70,6 +48,7 @@ func UIBookIndex(c *gin.Context) {
 	keyword := c.DefaultQuery("keyword", "")
 	keyword = strings.TrimLeft(keyword, " ") 
 	keyword = strings.TrimRight(keyword, " ") 
+	keyword = strings.NewReplacer(`'`, `\'`, `"`, `\"`).Replace(keyword) 
 	
 	pageNumber, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	var currentPageNumber int64 = int64(pageNumber)

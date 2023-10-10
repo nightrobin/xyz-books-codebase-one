@@ -22,6 +22,7 @@ func GetRouter() *gin.Engine {
 	
 	authorsUI := router.Group("/authors-ui")
 	{
+		authorsUI.GET("/", method.UIAuthorIndex)
 		authorsUI.GET("/add-form", method.UIAddAuthorForm)
 		authorsUI.POST("/submit-add-form", method.UISubmitAddAuthorForm)
 	}
@@ -38,6 +39,7 @@ func GetRouter() *gin.Engine {
 
 	publishersUI := router.Group("/publishers-ui")
 	{
+		publishersUI.GET("/", method.UIPublisherIndex)
 		publishersUI.GET("/add-form", method.UIAddPublisherForm)
 		publishersUI.POST("/submit-add-form", method.UISubmitAddPublisherForm)
 	}
