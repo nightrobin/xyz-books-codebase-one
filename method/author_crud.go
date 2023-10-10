@@ -145,22 +145,40 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 	var authorForm authorForm
 	c.ShouldBind(&authorForm)
 
-	Db.Transaction(func(tx *gorm.DB) error {
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully added an Author" 
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("authors").Create(&authorForm).Error; err != nil {
-
-			c.IndentedJSON(http.StatusOK, "NOT SAVED")
-
 			return err
 		}
 
 		return nil
 	})
 
-	// c.Redirect(http.StatusFound, "/authors-ui/add-form?success=true")
-	// c.IndentedJSON(http.StatusOK, "OK")
+	if transactionErr != nil {
+		pageData.Message = "Cannot add an Author." 
+		pageData.HasError = true
+	}
 
-	// c.JSON(200, gin.H{"name": publisherForm.Name})
-	// c.File(ExPath + "/templates/publishers/add_form.html")
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	return
 }
@@ -230,7 +248,7 @@ func UIDeleteAuthor(c *gin.Context) {
 	pageData.HasError = false
 
 	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/delete_result.html")
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
 	if err != nil {
 		log.Fatal(err)
 	}

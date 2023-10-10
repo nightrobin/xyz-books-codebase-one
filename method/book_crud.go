@@ -206,11 +206,17 @@ func UISubmitAddBookForm(c *gin.Context) {
 	var bookAuthorIDs authorIDs
 	c.ShouldBind(&bookAuthorIDs)
 
-	Db.Transaction(func(tx *gorm.DB) error {
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully added a Book"
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("books").Create(&book).Error; err != nil {
-
-			c.IndentedJSON(http.StatusOK, "Book NOT SAVED")
-
 			return err
 		}
 
@@ -220,9 +226,6 @@ func UISubmitAddBookForm(c *gin.Context) {
 			bookAuthor.AuthorID = v
 
 			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
-
-				c.IndentedJSON(http.StatusOK, "Books Author NOT SAVED")
-	
 				return err
 			}
 
@@ -231,8 +234,23 @@ func UISubmitAddBookForm(c *gin.Context) {
 		return nil
 	})
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	if transactionErr != nil {
+		pageData.Message = "Cannot add a Book." 
+		pageData.HasError = true
+	}
 
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	return
 }
@@ -398,7 +416,7 @@ func UIDeleteBook(c *gin.Context) {
 	pageData.HasError = false
 
 	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/delete_result.html")
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
 	if err != nil {
 		log.Fatal(err)
 	}

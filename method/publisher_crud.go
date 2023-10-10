@@ -140,21 +140,40 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 	var publisherForm publisherForm
 	c.ShouldBind(&publisherForm)
 
-	Db.Transaction(func(tx *gorm.DB) error {
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully added a Publisher"
+	pageData.HasError = false
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("publishers").Create(&publisherForm).Error; err != nil {
-
-			c.IndentedJSON(http.StatusOK, "NOT SAVED")
-
 			return err
 		}
 
 		return nil
 	})
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	if transactionErr != nil {
+		pageData.Message = "Cannot add a Publisher." 
+		pageData.HasError = true
+	}
 
-	// c.JSON(200, gin.H{"name": publisherForm.Name})
-	// c.File(ExPath + "/templates/publishers/add_form.html")
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	return
 }
@@ -224,7 +243,7 @@ func UIDeletePublisher(c *gin.Context) {
 	pageData.HasError = false
 
 	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/delete_result.html")
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
 	if err != nil {
 		log.Fatal(err)
 	}
