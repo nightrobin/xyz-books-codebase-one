@@ -106,7 +106,6 @@ func UIBookIndex(c *gin.Context) {
 
 		type PageData struct {
 			Keyword string
-			RecordCount int64
 			Books []bookDisplay
 			PageNumbers []int64
 			CountShownPageNumber int64
@@ -119,7 +118,6 @@ func UIBookIndex(c *gin.Context) {
 		
 		var data PageData
 		data.Books = books
-		data.RecordCount = count
 		
 		numberOfPages := count / int64(recordLimitPerPage)
 
