@@ -226,7 +226,7 @@ func UIDeleteAuthor(c *gin.Context) {
 	}
 
 	var pageData PageData
-	pageData.Message = "Successfully deleted Publisher" 
+	pageData.Message = "Successfully deleted Author" 
 	pageData.HasError = false
 
 	w := c.Writer
