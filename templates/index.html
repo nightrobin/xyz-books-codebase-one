@@ -82,37 +82,39 @@
                     </table>
                 </div>
             </div>
-            <div class="row justify-content-center">
-                <div class="col-3">
-                    <nav>
-                        <ul class="pagination">
-                            {{ if le .CurrentPage 10 }}
-                                <li class="page-item disabled">
-                            {{ else }}
-                                <li class="page-item">
-                            {{ end }}
-                                <a class="page-link" href="#">Previous</a>
-                            </li>
-                            {{ range $pageNumber := .PageNumbers}}
-                                {{ if eq $pageNumber $.CurrentPage}}
-                                    <li class="page-item active">
+            {{ if gt .RecordCount 0 }}
+                <div class="row justify-content-center">
+                    <div class="col-3">
+                        <nav>
+                            <ul class="pagination">
+                                {{ if le .CurrentPage .CountShownPageNumber }}
+                                    <li class="page-item disabled">
                                 {{ else }}
                                     <li class="page-item">
                                 {{ end }}
-                                    <a class="page-link" href="/?page={{$pageNumber}}">{{$pageNumber}}</a>
+                                    <a class="page-link" href="/?keyword={{ .Keyword }}&page={{ .PreviousPageNumber }}">Previous</a>
                                 </li>
-                            {{ end }}
-                            {{ if .IsNextEnabled }}
-                                <li class="page-item">
-                            {{ else }}
-                                <li class="page-item disabled">
-                            {{ end }}
-                                <a class="page-link" href="#">Next</a>
-                            </li>
-                        </ul>
-                    </nav>
+                                {{ range $pageNumber := .PageNumbers }}
+                                    {{ if eq $pageNumber $.CurrentPage }}
+                                        <li class="page-item active">
+                                    {{ else }}
+                                        <li class="page-item">
+                                    {{ end }}
+                                        <a class="page-link" href="/?keyword={{ $.Keyword }}&page={{ $pageNumber }}">{{ $pageNumber }}</a>
+                                    </li>
+                                {{ end }}
+                                {{ if .IsNextEnabled }}
+                                    <li class="page-item">
+                                {{ else }}
+                                    <li class="page-item disabled">
+                                {{ end }}
+                                    <a class="page-link" href="/?keyword={{ .Keyword }}&page={{ .NextPageNumber }}">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
-            </div>
+            {{ end }}
         </div>
     </body>
 </html>
