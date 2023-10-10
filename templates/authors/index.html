@@ -66,6 +66,10 @@
                                 <td>{{$author.MiddleName}}</td>
                                 <td>{{$author.LastName}}</td>
                             </tr>
+                            {{ else }}
+                            <tr>
+                                <td colspan="11">No record found</td>
+                            </tr>
                             {{ end }}
                         </tbody>
                     </table>
