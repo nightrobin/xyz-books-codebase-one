@@ -84,7 +84,6 @@ func UIBookIndex(c *gin.Context) {
 		defer wg.Done()
 		
 		var books []bookDisplay
-		// var countResult *gorm.DB 
 		var count int64
 		
 		if (len(keyword) != 0){
