@@ -26,7 +26,8 @@ func GetRouter() *gin.Engine {
 		authorsUI.GET("/add-form", method.UIAddAuthorForm)
 		authorsUI.POST("/submit-add-form", method.UISubmitAddAuthorForm)
 		authorsUI.GET("/update-form/:id", method.UIUpdateAuthorForm)
-		authorsUI.GET("/view/:id", method.UIViewAuthor)
+		authorsUI.GET("/view/:id", method.UIViewAuthor)		
+		authorsUI.GET("/delete/:id", method.UIDeleteAuthor)
 	}
 	
 	booksUI := router.Group("/books-ui")
@@ -46,6 +47,7 @@ func GetRouter() *gin.Engine {
 		publishersUI.POST("/submit-add-form", method.UISubmitAddPublisherForm)
 		publishersUI.GET("/update-form/:id", method.UIUpdatePublisherForm)
 		publishersUI.GET("/view/:id", method.UIViewPublisher)
+		publishersUI.GET("/delete/:id", method.UIDeletePublisher)
 	}
 	// router.GET("/books-ui/update/:isbn_13", method.UIUpdateBook)
 	// router.GET("/books-ui/delete/:isbn_13", method.UIDeleteBook)

@@ -387,33 +387,59 @@ func UIDeleteBook(c *gin.Context) {
 
 	var book model.Book
 	result := Db.Where("isbn_13 = ?", isbn_13).First(&book)
+	
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully deleted Book" 
+	pageData.HasError = false
+
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/delete_result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if result.Error == gorm.ErrRecordNotFound {
-		c.IndentedJSON(http.StatusNotFound, "Book NOT found")
+		pageData.Message = "Book not found." 
+		pageData.HasError = true
+		if err := tmpl.Execute(w, pageData); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
-	Db.Transaction(func(tx *gorm.DB) error {
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 	
 		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
-			
-			c.IndentedJSON(http.StatusNotFound, "Existing Books Authors NOT found")
 			return err
-
 		}
 
 		if err := tx.Unscoped().Delete(&book).Error; err != nil {
-
-			c.IndentedJSON(http.StatusNotFound, "Book NOT DELETED")
 			return err
-
 		}
 
 		return nil
 	})
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	if transactionErr != nil {
+		pageData.Message = "Cannot delete this Book." 
+		pageData.HasError = true
+	}
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
 }
+
 
 func AddBook(c *gin.Context) {
 	data := model.Book{ID: 1, Title: "Book 1"}

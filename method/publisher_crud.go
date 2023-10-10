@@ -207,3 +207,57 @@ func UIViewPublisher(c *gin.Context) {
 
 	return
 }
+
+func UIDeletePublisher(c *gin.Context) {
+	ID := c.Param("id")
+
+	var publisher model.Publisher
+	result := Db.Where("id = ?", ID).First(&publisher)
+	
+	type PageData struct {
+		Message string
+		HasError bool
+	}
+
+	var pageData PageData
+	pageData.Message = "Successfully deleted Publisher" 
+	pageData.HasError = false
+
+	w := c.Writer
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/delete_result.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if result.Error == gorm.ErrRecordNotFound {
+		pageData.Message = "Publisher not found." 
+		pageData.HasError = true
+		if err := tmpl.Execute(w, pageData); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Table("publishers").Where("id = ?", publisher.ID).Unscoped().Delete(&model.Publisher{}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if transactionErr != nil {
+		pageData.Message = "Cannot delete this Publisher because it is currently used in a book." 
+		pageData.HasError = true
+	}
+
+	if err := tmpl.Execute(w, pageData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
