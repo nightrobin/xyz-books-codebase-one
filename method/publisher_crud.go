@@ -158,3 +158,52 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 
 	return
 }
+
+func UIUpdatePublisherForm(c *gin.Context) {
+	ID := c.Param("id")
+	
+	var publisher model.Publisher
+	Db.Where("id = ?", ID).First(&publisher)
+
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/update_form.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, publisher); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
+func UIViewPublisher(c *gin.Context) {
+	ID := c.Param("id")
+
+	var publisher model.Publisher
+
+	Db.Where("id = ?", ID).First(&publisher)
+
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/view_one.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, publisher); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}

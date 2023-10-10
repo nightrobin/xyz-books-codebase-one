@@ -164,3 +164,52 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 
 	return
 }
+
+func UIUpdateAuthorForm(c *gin.Context) {
+	ID := c.Param("id")
+	
+	var author model.Author
+	Db.Where("id = ?", ID).First(&author)
+
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/update_form.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, author); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
+
+func UIViewAuthor(c *gin.Context) {
+	ID := c.Param("id")
+
+	var author model.Author
+
+	Db.Where("id = ?", ID).First(&author)
+
+	w := c.Writer
+
+	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/view_one.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpl := template.Must(parsedIndexTemplate, err)
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if err := tmpl.Execute(w, author); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return
+}
