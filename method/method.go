@@ -10,17 +10,21 @@ import (
 	"xyz-books/orm"
 	
 	"github.com/joho/godotenv"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
 var Db *gorm.DB
 var ExPath string
+var Validate *validator.Validate
 
 var recordLimitPerPage int
 var countShownPageNumber int
 
+
 func init() {
 	Db = orm.ConnectToDB()
+	Validate = validator.New()
 
 	ex, err := os.Executable()
 	if err != nil {

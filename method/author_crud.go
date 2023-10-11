@@ -13,6 +13,7 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -387,6 +388,7 @@ func GetAuthors(c *gin.Context) {
 
 		data := make(map[string]string)
 		data["authors"] = authorDataJsonStr
+
 		response := model.Response[map[string]string]{
 			Message: "Successfully retrieved authors",
 			Count: result.RowsAffected,
@@ -425,6 +427,7 @@ func GetAuthor(c *gin.Context) {
 
 	data := make(map[string]string)
 	data["author"] = authorDataJsonStr
+
 	response := model.Response[map[string]string]{
 		Message: "Successfully retrieved author",
 		Count: result.RowsAffected,
@@ -433,6 +436,55 @@ func GetAuthor(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
+	
 	return
+}
 
+func AddAuthor(c *gin.Context) {
+	var author model.Author
+
+	if err := c.BindJSON(&author); err != nil {
+		return
+	}
+
+	err := Validate.Struct(author)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("authors").Create(&author).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	authorDataJson, _ := json.Marshal(author)
+	authorDataJsonStr := string(authorDataJson)
+
+	data := make(map[string]string)
+	data["author"] = authorDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully added an Author",
+		Count: 1,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+
+	return
 }

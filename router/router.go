@@ -35,7 +35,7 @@ func GetRouter() *gin.Engine {
 	{
 		authorsAPI.GET("/", method.GetAuthors)
 		authorsAPI.GET("/:id", method.GetAuthor)
-		// authorsUI.POST("/", method.AddAuthor)
+		authorsAPI.POST("/", method.AddAuthor)
 		// authorsUI.PATCH("/", method.UpdateAuthor)
 		// authorsUI.DELETE("/:id", method.DeleteAuthor)		
 	}
