@@ -50,6 +50,15 @@ func GetRouter() *gin.Engine {
 		booksUI.GET("/delete/:isbn_13", method.UIDeleteBook)
 	}
 
+	booksAPI := router.Group("/api/books")
+	{
+		booksAPI.GET("/", method.GetBooks)
+		booksAPI.GET("/:isbn_13", method.GetBook)
+		booksAPI.POST("/", method.AddBook)
+		// booksAPI.PATCH("/:id", method.UpdateBook)
+		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
+	}
+
 	publishersUI := router.Group("/publishers/ui")
 	{
 		publishersUI.GET("/", method.UIPublisherIndex)

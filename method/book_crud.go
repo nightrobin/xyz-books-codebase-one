@@ -2,7 +2,7 @@ package method
 
 import(
 	// "fmt"
-	// "encoding/json"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"log"
@@ -14,6 +14,7 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -162,7 +163,6 @@ func UIAddBookForm(c *gin.Context) {
 	var publishers []model.Publisher
 	Db.Find(&publishers)
 
-
 	type PageData struct {
 		Authors []model.Author
 		Publishers []model.Publisher
@@ -219,8 +219,8 @@ func UISubmitAddBookForm(c *gin.Context) {
 	
 	var countIsbn10 int64
 	Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
-	if countIsbn13 > 0 {
-		pageData.Message = "Cannot add a book. Duplicate ISBN 13"
+	if countIsbn10 > 0 {
+		pageData.Message = "Cannot add a book. Duplicate ISBN 10"
 		pageData.HasError = true
 	}
 
@@ -484,14 +484,318 @@ func UIDeleteBook(c *gin.Context) {
 	return
 }
 
+func GetBooks(c *gin.Context) {
+	keyword := c.DefaultQuery("keyword", "")
+	keyword = strings.TrimLeft(keyword, " ") 
+	keyword = strings.TrimRight(keyword, " ")
+	keyword = strings.NewReplacer(`'`, `\'`, `"`, `\"`).Replace(keyword) 
+	
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 
-// func AddBook(c *gin.Context) {
-// 	data := model.Book{ID: 1, Title: "Book 1"}
-// 	response := model.Response[model.Book]{
-// 		Message: "Successfully added a book",
-// 		Data:    data,
-// 	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	if limit < 1 {
+		limit = recordLimitPerPage
+	}
 
-// 	c.IndentedJSON(http.StatusOK, response)
-// 	return
-// }
+	var wg sync.WaitGroup
+	
+	wg.Add(1)
+
+	go func () {
+		defer wg.Done()
+
+		type BookData struct {
+			ID				uint64		`json:"id"`
+			Title			string		`json:"title"`
+			Isbn13			string		`json:"isbn_13"`
+			Isbn10			string		`json:"isbn_10"`
+			PublicationYear	int16		`json:"publication_year"`
+			PublisherID		uint64		`json:"publisher_id"`
+			ImageURL		string		`json:"image_url"`
+			Edition			string		`json:"edition"`
+			ListPrice		float32		`json:"list_price"`
+			AuthorIDs		string		`json:"author_ids" gorm:"column:author_ids"`
+		}
+
+		var books []BookData
+		var result *gorm.DB
+		
+		if (len(keyword) != 0){
+		
+			havingString := " title LIKE '%" + keyword + "%' " 
+			havingString = havingString + " or isbn_13 LIKE '%" + keyword + "%' " 
+			havingString = havingString + " or isbn_10 LIKE '%" + keyword + "%' " 
+			havingString = havingString + " OR author LIKE '%" + keyword + "%' "
+			havingString = havingString + " OR publication_year LIKE '%" + keyword + "%' "
+			havingString = havingString + " OR publisher_name LIKE '%" + keyword + "%' "
+			
+			result = Db.Table("books b").Select("b.id", "b.title", "CONCAT('[', GROUP_CONCAT('', a.id, ''), ']') author_ids", "b.isbn_13", "b.isbn_10", "b.publication_year", "b.publisher_id", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Group("b.id").Having(havingString).Limit(limit).Offset(page - 1).Find(&books)
+		} else {
+			result = Db.Table("books b").Select("b.id", "b.title", "CONCAT('[', GROUP_CONCAT('', a.id, ''), ']') author_ids", "b.isbn_13", "b.isbn_10", "b.publication_year", "b.publisher_id", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Group("b.id").Limit(limit).Offset(page - 1).Find(&books)
+		}
+
+		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+			response := model.Response[map[string]string]{
+				Message: "No Books yet / Books not found",
+			}
+
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+		
+		booksDataJson, _ := json.Marshal(books)
+		booksDataJsonStr := string(booksDataJson) 
+		
+		data := make(map[string]string)
+		data["books"] = booksDataJsonStr
+
+		response := model.Response[map[string]string]{
+			Message: "Successfully retrieved books",
+			Count: result.RowsAffected,
+			Page: int64(page),
+			Data:    data,
+		}
+
+		c.IndentedJSON(http.StatusOK, response)
+		return
+
+	}()
+	
+	wg.Wait()
+
+	return
+}
+
+func GetBook(c *gin.Context) {
+	Isbn13 := c.Param("isbn_13")
+	
+	var book model.Book
+	book.Isbn13 = Isbn13
+
+	err := Validate.Struct(book)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	result := Db.Where("isbn_13 = ?", book.Isbn13).First(&book)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Book not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	bookDataJson, _ := json.Marshal(book)
+	bookDataJsonStr := string(bookDataJson)
+
+	data := make(map[string]string)
+	data["book"] = bookDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully retrieved book",
+		Count: result.RowsAffected,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+	
+	return
+}
+
+func AddBook(c *gin.Context) {
+	type bookData struct {
+		ID				uint64	`gorm:"primaryKey"`
+		Title			string	`json:"title" form:"title"`
+		Isbn13			string	`gorm:"column:isbn_13" json:"isbn_13" form:"isbn-13"`
+		Isbn10			string	`gorm:"column:isbn_10" json:"isbn_10" form:"isbn-10"`
+		PublicationYear	int16 	`json:"publication_year" form:"publication-year"`
+		PublisherID		uint64	`json:"publisher_id" form:"publisher-id"`
+		ImageURL		string	`json:"image_url" form:"image-url"`
+		Edition			string	`json:"edition" form:"edition"`
+		ListPrice		float32	`json:"list_price" form:"list-price"`
+		AuthorIDs		[]uint64	`gorm:"-" json:"author_ids" validate:"required"`
+	}
+	var book bookData
+
+	if err := c.BindJSON(&book); err != nil {
+		return
+	}
+
+	err := Validate.Struct(book)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var hasIsbn bool = false
+	
+	if len(book.Isbn10) > 0 {
+		hasIsbn = true
+		var countIsbn13 int64
+		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+		if countIsbn13 > 0 {
+			response := model.Response[map[string]string]{
+				Message: "Duplicate ISBN 13",
+			}
+
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+	}
+	
+	if len(book.Isbn10) > 0 {
+		hasIsbn = true
+		var countIsbn10 int64
+		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+		if countIsbn10 > 0 {
+			response := model.Response[map[string]string]{
+				Message: "Duplicate ISBN 10",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+	}
+
+	if !hasIsbn {
+		response := model.Response[map[string]string]{
+			Message: "Atleast ISBN 13 or ISBN 10 is required",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if len(book.AuthorIDs) == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Atleast one valid Author ID is required",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
+	
+	var countAuthor int64
+	authorIDsWhereString := string(authorIDsJson)
+	authorIDsWhereString = strings.Replace(authorIDsWhereString, "[", "(", 1)
+	authorIDsWhereString = strings.Replace(authorIDsWhereString, "]", ")", 1)
+	
+	Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
+
+	if countAuthor < int64(len(book.AuthorIDs)) {
+		response := model.Response[map[string]string]{
+			Message: "Author ID(s) not valid",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("books").Create(&book).Error; err != nil {
+			return err
+		}
+
+		for _, v := range book.AuthorIDs {
+			var bookAuthor model.BookAuthor
+			bookAuthor.BookID = book.ID
+			bookAuthor.AuthorID = v
+
+			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	bookDataJson, _ := json.Marshal(book)
+	bookDataJsonStr := string(bookDataJson)
+
+	data := make(map[string]string)
+	data["book"] = bookDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully added an Book",
+		Count: 1,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+
+	return
+}
+
+func DeleteBook(c *gin.Context) {
+	Isbn13 := c.Param("isbn_13")
+
+	var book model.Book
+
+	result := Db.Where("isbn_13 = ?", Isbn13).First(&book)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Book not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		
+		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Table("books").Where("id = ?", book.ID).Unscoped().Delete(&model.Book{}).Error; err != nil {
+			response := model.Response[map[string]string]{
+				Message: "Cannot delete this book.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return err
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Successfully deleted book",
+			Count: result.RowsAffected,
+			Page: int64(1),
+		}
+		
+		c.IndentedJSON(http.StatusOK, response)
+	
+		return nil
+	})
+	
+	
+	return
+}
