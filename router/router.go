@@ -34,7 +34,7 @@ func GetRouter() *gin.Engine {
 	authorsAPI := router.Group("/api/authors")
 	{
 		authorsAPI.GET("/", method.GetAuthors)
-		authorsUI.GET("/:id", method.GetAuthor)
+		authorsAPI.GET("/:id", method.GetAuthor)
 		// authorsUI.POST("/", method.AddAuthor)
 		// authorsUI.PATCH("/", method.UpdateAuthor)
 		// authorsUI.DELETE("/:id", method.DeleteAuthor)		

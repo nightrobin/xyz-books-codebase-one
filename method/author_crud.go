@@ -375,7 +375,7 @@ func GetAuthors(c *gin.Context) {
 
 		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 			response := model.Response[map[string]string]{
-				Message: "No Authors yet",
+				Message: "No Authors yet / Authors not found",
 			}
 
 			c.IndentedJSON(http.StatusBadRequest, response)
@@ -402,4 +402,37 @@ func GetAuthors(c *gin.Context) {
 	wg.Wait()
 
 	return
+}
+
+func GetAuthor(c *gin.Context) {
+	ID := c.Param("id")
+
+	var author model.Author
+
+	result := Db.Where("id = ?", ID).First(&author)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Author not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	authorDataJson, _ := json.Marshal(author)
+	authorDataJsonStr := string(authorDataJson)
+
+	data := make(map[string]string)
+	data["author"] = authorDataJsonStr
+	response := model.Response[map[string]string]{
+		Message: "Successfully retrieved author",
+		Count: result.RowsAffected,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+	return
+
 }
