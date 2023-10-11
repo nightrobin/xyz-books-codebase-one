@@ -488,3 +488,45 @@ func AddAuthor(c *gin.Context) {
 
 	return
 }
+
+func DeleteAuthor(c *gin.Context) {
+	ID := c.Param("id")
+
+	var author model.Author
+
+	result := Db.Where("id = ?", ID).First(&author)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Author not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		
+		if err := tx.Table("authors").Where("id = ?", author.ID).Unscoped().Delete(&model.Author{}).Error; err != nil {
+			response := model.Response[map[string]string]{
+				Message: "Cannot delete this Author because it is currently used in a book.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return err
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Successfully deleted author",
+			Count: result.RowsAffected,
+			Page: int64(1),
+		}
+		
+		c.IndentedJSON(http.StatusOK, response)
+	
+		return nil
+	})
+	
+	
+	return
+}
