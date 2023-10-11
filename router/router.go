@@ -60,11 +60,15 @@ func GetRouter() *gin.Engine {
 		publishersUI.GET("/view/:id", method.UIViewPublisher)
 		publishersUI.GET("/delete/:id", method.UIDeletePublisher)
 	}
-	// router.GET("/books/ui/update/:isbn_13", method.UIUpdateBook)
-	// router.GET("/books/ui/delete/:isbn_13", method.UIDeleteBook)
 
-	// router.GET("/books/display/{isbn_13:[0-9a-zA-Z]+}", method.DisplayBook)
-	// router.GET("/books/ui/{isbn_13:[0-9]+}", method.DisplayBook)
+	publishersAPI := router.Group("/api/publishers")
+	{
+		publishersAPI.GET("/", method.GetPublishers)
+		publishersAPI.GET("/:id", method.GetPublisher)
+		publishersAPI.POST("/", method.AddPublisher)
+		// // publishersAPI.PATCH("/:id", method.UpdatePublisher)
+		publishersAPI.DELETE("/:id", method.DeletePublisher)		
+	}
 
 	return router
 }

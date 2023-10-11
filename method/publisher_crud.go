@@ -1,8 +1,8 @@
 package method
 
 import(
-	"fmt"
-	// "encoding/json"
+	// "fmt"
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -13,6 +13,7 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -211,8 +212,6 @@ func UISubmitUpdatePublisherForm(c *gin.Context) {
 	var existingPublisher model.Publisher
 	Db.Where("id = ?", ID).First(&existingPublisher)
 
-	fmt.Print("")
-
 	existingPublisher.Name = publisher.Name
 
 	type PageData struct {
@@ -330,5 +329,195 @@ func UIDeletePublisher(c *gin.Context) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	return
+}
+
+func GetPublishers(c *gin.Context) {
+	keyword := c.DefaultQuery("keyword", "")
+	keyword = strings.TrimLeft(keyword, " ") 
+	keyword = strings.TrimRight(keyword, " ")
+	keyword = strings.NewReplacer(`'`, `\'`, `"`, `\"`).Replace(keyword) 
+	
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	if limit < 1 {
+		limit = recordLimitPerPage
+	}
+
+	var wg sync.WaitGroup
+	
+	wg.Add(1)
+
+	go func () {
+		defer wg.Done()
+		
+		var publishers []model.Publisher
+		var result *gorm.DB
+
+		if (len(keyword) != 0){
+		
+			whereString := " name LIKE '%" + keyword + "%' " 
+			
+			result = Db.Table("publishers").Select("id", "name").Where(whereString).Limit(limit).Offset((page - 1 )* recordLimitPerPage).Find(&publishers)
+		
+		} else {
+			result = Db.Table("publishers").Select("id", "name").Limit(limit).Offset((page - 1 )* recordLimitPerPage).Find(&publishers)
+		}
+
+		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+			response := model.Response[map[string]string]{
+				Message: "No Publishers yet / Publishers not found",
+			}
+
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+		
+		publisherDataJson, _ := json.Marshal(publishers)
+		publisherDataJsonStr := string(publisherDataJson)
+
+		data := make(map[string]string)
+		data["publishers"] = publisherDataJsonStr
+
+		response := model.Response[map[string]string]{
+			Message: "Successfully retrieved publishers",
+			Count: result.RowsAffected,
+			Page: int64(page),
+			Data:    data,
+		}
+
+		c.IndentedJSON(http.StatusOK, response)
+		return
+
+	}()
+	
+	wg.Wait()
+
+	return
+}
+
+func GetPublisher(c *gin.Context) {
+	ID := c.Param("id")
+
+	var publisher model.Publisher
+
+	result := Db.Where("id = ?", ID).First(&publisher)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Publisher not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	publisherDataJson, _ := json.Marshal(publisher)
+	publisherDataJsonStr := string(publisherDataJson)
+
+	data := make(map[string]string)
+	data["publisher"] = publisherDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully retrieved publisher",
+		Count: result.RowsAffected,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+	
+	return
+}
+
+func AddPublisher(c *gin.Context) {
+	var publisher model.Publisher
+
+	if err := c.BindJSON(&publisher); err != nil {
+		return
+	}
+
+	err := Validate.Struct(publisher)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("publishers").Create(&publisher).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	publisherDataJson, _ := json.Marshal(publisher)
+	publisherDataJsonStr := string(publisherDataJson)
+
+	data := make(map[string]string)
+	data["publisher"] = publisherDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully added an Publisher",
+		Count: 1,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+
+	return
+}
+
+func DeletePublisher(c *gin.Context) {
+	ID := c.Param("id")
+
+	var publisher model.Publisher
+
+	result := Db.Where("id = ?", ID).First(&publisher)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Publisher not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	Db.Transaction(func(tx *gorm.DB) error {
+		
+		if err := tx.Table("publishers").Where("id = ?", publisher.ID).Unscoped().Delete(&model.Publisher{}).Error; err != nil {
+			response := model.Response[map[string]string]{
+				Message: "Cannot delete this Publisher because it is currently used in a book.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return err
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Successfully deleted publisher",
+			Count: result.RowsAffected,
+			Page: int64(1),
+		}
+		
+		c.IndentedJSON(http.StatusOK, response)
+	
+		return nil
+	})
+	
+	
 	return
 }
