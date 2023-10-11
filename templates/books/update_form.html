@@ -23,7 +23,7 @@
                         <div class="card-body">
                             <div class="card-text">
                                 <div class="table-responsive">
-                                    <form action="/books-ui/submit-update-form/{{.Book.Isbn13}}" method="POST">
+                                    <form action="/books/ui/submit-update-form/{{.Book.Isbn13}}" method="POST">
                                         <table class="table table-borderless">
                                             <tbody>
                                                 <tr>
@@ -47,7 +47,7 @@
                                                         <div id="authorHelp" class="form-text">You may select multiple authors by CTRL + Click. If the author is not on the list, you may Create a new author</div>
                                                     </td>
                                                     <td>
-                                                        <a class="btn btn-primary" href="/authors-ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Author</a>
+                                                        <a class="btn btn-primary" href="/authors/ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Author</a>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -83,7 +83,7 @@
                                                         <div id="publisherHelp" class="form-text">If the publisher is not on the list, you may Create a new publisher</div>
                                                     </td>
                                                     <td>
-                                                        <a class="btn btn-primary" href="/publishers-ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Publisher</a>
+                                                        <a class="btn btn-primary" href="/publishers/ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Create a new Publisher</a>
                                                     </td>
                                                 </tr>
                                                 <tr>
