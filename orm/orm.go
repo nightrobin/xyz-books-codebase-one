@@ -31,7 +31,7 @@ func ConnectToDB() *gorm.DB {
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN: config,
 		DefaultStringSize: 256,
-	}), &gorm.Config{})
+	}), &gorm.Config{TranslateError: true})
 
 	if err != nil {
 		log.Fatal(err)

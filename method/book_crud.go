@@ -210,28 +210,43 @@ func UISubmitAddBookForm(c *gin.Context) {
 	pageData.Message = "Successfully added a Book"
 	pageData.HasError = false
 
-	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Table("books").Create(&book).Error; err != nil {
-			return err
-		}
+	var countIsbn13 int64
+	Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+	if countIsbn13 > 0 {
+		pageData.Message = "Cannot add a book. Duplicate ISBN 13"
+		pageData.HasError = true
+	}
+	
+	var countIsbn10 int64
+	Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+	if countIsbn13 > 0 {
+		pageData.Message = "Cannot add a book. Duplicate ISBN 13"
+		pageData.HasError = true
+	}
 
-		for _, v := range bookAuthorIDs.AuthorIDs {
-			var bookAuthor model.BookAuthor
-			bookAuthor.BookID = book.ID
-			bookAuthor.AuthorID = v
-
-			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+	if !pageData.HasError {
+		transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Table("books").Create(&book).Error; err != nil {
 				return err
 			}
 
+			for _, v := range bookAuthorIDs.AuthorIDs {
+				var bookAuthor model.BookAuthor
+				bookAuthor.BookID = book.ID
+				bookAuthor.AuthorID = v
+
+				if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+		if transactionErr != nil {
+			pageData.Message = "Cannot add a Book." 
+			pageData.HasError = true
 		}
-
-		return nil
-	})
-
-	if transactionErr != nil {
-		pageData.Message = "Cannot add a Book." 
-		pageData.HasError = true
 	}
 
 	w := c.Writer
