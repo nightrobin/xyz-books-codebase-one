@@ -2,7 +2,7 @@ package method
 
 import(
 	// "fmt"
-	// "encoding/json"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"log"
@@ -334,6 +334,72 @@ func UIDeleteAuthor(c *gin.Context) {
 	if err := tmpl.Execute(w, pageData); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+
+	return
+}
+
+func GetAuthors(c *gin.Context) {
+	keyword := c.DefaultQuery("keyword", "")
+	keyword = strings.TrimLeft(keyword, " ") 
+	keyword = strings.TrimRight(keyword, " ")
+	keyword = strings.NewReplacer(`'`, `\'`, `"`, `\"`).Replace(keyword) 
+	
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	if limit < 1 {
+		limit = recordLimitPerPage
+	}
+
+	var wg sync.WaitGroup
+	
+	wg.Add(1)
+
+	go func () {
+		defer wg.Done()
+		
+		var authors []model.Author
+		var result *gorm.DB
+
+		if (len(keyword) != 0){
+		
+			whereString := " first_name LIKE '%" + keyword + "%' " 
+			whereString = whereString + " or middle_name LIKE '%" + keyword + "%' " 
+			whereString = whereString + " or last_name LIKE '%" + keyword + "%' " 
+			
+			result = Db.Table("authors").Select("id", "first_name", "middle_name", "last_name").Where(whereString).Limit(limit).Offset((page - 1 )* recordLimitPerPage).Find(&authors)
+		
+		} else {
+			result = Db.Table("authors").Select("id", "first_name", "middle_name", "last_name").Limit(limit).Offset((page - 1 )* recordLimitPerPage).Find(&authors)
+		}
+
+		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+			response := model.Response[map[string]string]{
+				Message: "No Authors yet",
+			}
+
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+		
+		authorDataJson, _ := json.Marshal(authors)
+		authorDataJsonStr := string(authorDataJson)
+
+		data := make(map[string]string)
+		data["authors"] = authorDataJsonStr
+		response := model.Response[map[string]string]{
+			Message: "Successfully retrieved authors",
+			Count: result.RowsAffected,
+			Page: int64(page),
+			Data:    data,
+		}
+
+		c.IndentedJSON(http.StatusOK, response)
+		return
+
+	}()
+	
+	wg.Wait()
 
 	return
 }

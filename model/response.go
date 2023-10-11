@@ -5,10 +5,12 @@ import (
 )
 
 type CustomData interface {
-	constraints.Ordered | map[string]string | Book | []Book
+	constraints.Ordered | map[string]string | []Author
 }
 
 type Response[T CustomData] struct {
-	Message string `json:"message"`
-	Data    T      `json:"data"`
+	Message	string	`json:"message"`
+	Count	int64	`json:"count"`
+	Page	int64	`json:"page"`
+	Data	T		`json:"data"`
 }
