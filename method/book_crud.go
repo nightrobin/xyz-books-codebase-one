@@ -1,7 +1,7 @@
 package method
 
 import(
-	// "fmt"
+	"fmt"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -620,16 +620,17 @@ func GetBook(c *gin.Context) {
 func AddBook(c *gin.Context) {
 	type bookData struct {
 		ID				uint64	`gorm:"primaryKey"`
-		Title			string	`json:"title" form:"title"`
-		Isbn13			string	`gorm:"column:isbn_13" json:"isbn_13" form:"isbn-13"`
-		Isbn10			string	`gorm:"column:isbn_10" json:"isbn_10" form:"isbn-10"`
-		PublicationYear	int16 	`json:"publication_year" form:"publication-year"`
-		PublisherID		uint64	`json:"publisher_id" form:"publisher-id"`
-		ImageURL		string	`json:"image_url" form:"image-url"`
-		Edition			string	`json:"edition" form:"edition"`
-		ListPrice		float32	`json:"list_price" form:"list-price"`
+		Title			string	`json:"title"`
+		Isbn13			string	`gorm:"column:isbn_13" json:"isbn_13"`
+		Isbn10			string	`gorm:"column:isbn_10" json:"isbn_10"`
+		PublicationYear	int16 	`json:"publication_year"`
+		PublisherID		uint64	`json:"publisher_id"`
+		ImageURL		string	`json:"image_url"`
+		Edition			string	`json:"edition"`
+		ListPrice		float32	`json:"list_price"`
 		AuthorIDs		[]uint64	`gorm:"-" json:"author_ids" validate:"required"`
 	}
+
 	var book bookData
 
 	if err := c.BindJSON(&book); err != nil {
@@ -654,7 +655,7 @@ func AddBook(c *gin.Context) {
 
 	var hasIsbn bool = false
 	
-	if len(book.Isbn10) > 0 {
+	if len(book.Isbn13) > 0 {
 		hasIsbn = true
 		var countIsbn13 int64
 		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
@@ -744,6 +745,192 @@ func AddBook(c *gin.Context) {
 
 	response := model.Response[map[string]string]{
 		Message: "Successfully added an Book",
+		Count: 1,
+		Page: int64(1),
+		Data:	data,
+	}
+
+	c.IndentedJSON(http.StatusOK, response)
+
+	return
+}
+
+func UpdateBook(c *gin.Context) {
+	Isbn13 := c.Param("isbn_13")
+	
+	type bookData struct {
+		ID				uint64	`gorm:"primaryKey"`
+		Title			string	`json:"title"`
+		Isbn13			string	`gorm:"column:isbn_13" json:"isbn_13"`
+		Isbn10			string	`gorm:"column:isbn_10" json:"isbn_10"`
+		PublicationYear	int16 	`json:"publication_year"`
+		PublisherID		uint64	`json:"publisher_id"`
+		ImageURL		string	`json:"image_url"`
+		Edition			string	`json:"edition"`
+		ListPrice		float32	`json:"list_price"`
+		AuthorIDs		[]uint64	`gorm:"-" json:"author_ids" validate:"required"`
+	}
+
+	var book bookData
+
+	if err := c.BindJSON(&book); err != nil {
+		return
+	}
+
+	err := Validate.Struct(book)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var existingBook model.Book
+	result := Db.Table("books").Where("isbn_13 = ?", Isbn13).First(&existingBook)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Book not found with the given ISBN-13",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if len(book.Isbn13) > 0 {
+		var countIsbn13 int64
+		Db.Table("books").Where("id != ? and isbn_13 = ?", existingBook.ID, book.Isbn13).Count(&countIsbn13)
+		if countIsbn13 > 0 {
+			response := model.Response[map[string]string]{
+				Message: "Duplicate ISBN 13",
+			}
+
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+	}
+	
+	if len(book.Isbn10) > 0 {
+		var countIsbn10 int64
+		Db.Table("books").Where("id != ? and isbn_10 = ?", existingBook.ID, book.Isbn10).Count(&countIsbn10)
+		if countIsbn10 > 0 {
+			response := model.Response[map[string]string]{
+				Message: "Duplicate ISBN 10",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
+	}
+
+	if len(book.AuthorIDs) == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Atleast one valid Author ID is required",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+	
+	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
+	
+	var countAuthor int64
+	authorIDsWhereString := string(authorIDsJson)
+	authorIDsWhereString = strings.Replace(authorIDsWhereString, "[", "(", 1)
+	authorIDsWhereString = strings.Replace(authorIDsWhereString, "]", ")", 1)
+	
+	Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
+
+	if countAuthor < int64(len(book.AuthorIDs)) {
+		response := model.Response[map[string]string]{
+			Message: "Author ID(s) not valid",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if existingBook.Title != book.Title {
+		existingBook.Title = book.Title
+	}
+
+	if existingBook.Isbn13 != book.Isbn13 {
+		existingBook.Isbn13 = book.Isbn13
+	}
+
+	if existingBook.Isbn10 != book.Isbn10 {
+		existingBook.Isbn10 = book.Isbn10
+	}
+	
+	if existingBook.PublicationYear != book.PublicationYear {
+		existingBook.PublicationYear = book.PublicationYear
+	}
+
+	if existingBook.PublisherID != book.PublisherID {
+		existingBook.PublisherID = book.PublisherID
+	}
+
+	if existingBook.ImageURL != book.ImageURL {
+		existingBook.ImageURL = book.ImageURL
+	}
+	
+	if existingBook.Edition != book.Edition {
+		existingBook.Edition = book.Edition
+	}
+
+	if existingBook.ListPrice != book.ListPrice {
+		existingBook.ListPrice = book.ListPrice
+	}
+
+	//TODO Revalidate the data of the book to be saved
+
+	// fmt.Println(book)
+	// fmt.Println(existingBook)
+	// return
+	// {0 Book 1 9781891830858 1891830859 2001 1 https://asd.com Book 1 123.12 [1 2 3]}
+	// {1 American Elf 9781891830853 1891830856 2004 1 https://www.collinsdictionary.com/images/full/book_181404689_1000.jpg Book 2 1000}
+	
+	Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("book_authors").Where("book_id = ?", existingBook.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		if err := tx.Table("books").Save(&existingBook).Error; err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		for _, v := range book.AuthorIDs {
+			var bookAuthor model.BookAuthor
+			bookAuthor.BookID = existingBook.ID
+			bookAuthor.AuthorID = v
+
+			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+		
+		return nil
+	})
+
+	bookDataJson, _ := json.Marshal(book)
+	bookDataJsonStr := string(bookDataJson)
+
+	data := make(map[string]string)
+	data["book"] = bookDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully updated the Book",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,

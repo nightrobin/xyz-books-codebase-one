@@ -489,6 +489,78 @@ func AddAuthor(c *gin.Context) {
 	return
 }
 
+func UpdateAuthor(c *gin.Context) {
+	ID := c.Param("id")
+
+	var author model.Author
+	c.ShouldBind(&author)
+
+	var existingAuthor model.Author
+	result := Db.Where("id = ?", ID).First(&existingAuthor)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		response := model.Response[map[string]string]{
+			Message: "Author not found",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err := Validate.Struct(author)
+	if err != nil {
+		errors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			errors[err.StructField()] = err.Tag()
+		}
+
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+			Data:    errors,
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if existingAuthor.FirstName != author.FirstName {
+		existingAuthor.FirstName = author.FirstName
+	}
+	
+	if existingAuthor.MiddleName != author.MiddleName {
+		existingAuthor.MiddleName = author.MiddleName
+	}
+	
+	if existingAuthor.LastName != author.LastName {
+		existingAuthor.LastName = author.LastName
+	}
+	
+	Db.Transaction(func(tx *gorm.DB) error {
+	
+		if err := tx.Save(&existingAuthor).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	authorDataJson, _ := json.Marshal(existingAuthor)
+	authorDataJsonStr := string(authorDataJson)
+
+	data := make(map[string]string)
+	data["author"] = authorDataJsonStr
+
+	response := model.Response[map[string]string]{
+		Message: "Successfully updated the Author",
+		Count: 1,
+		Page: int64(1),
+		Data:	data,
+	}
+	c.IndentedJSON(http.StatusOK, response)
+
+	return
+}
+
 func DeleteAuthor(c *gin.Context) {
 	ID := c.Param("id")
 

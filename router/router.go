@@ -36,7 +36,7 @@ func GetRouter() *gin.Engine {
 		authorsAPI.GET("/", method.GetAuthors)
 		authorsAPI.GET("/:id", method.GetAuthor)
 		authorsAPI.POST("/", method.AddAuthor)
-		// authorsAPI.PATCH("/:id", method.UpdateAuthor)
+		authorsAPI.PATCH("/:id", method.UpdateAuthor)
 		authorsAPI.DELETE("/:id", method.DeleteAuthor)		
 	}
 	
@@ -55,7 +55,7 @@ func GetRouter() *gin.Engine {
 		booksAPI.GET("/", method.GetBooks)
 		booksAPI.GET("/:isbn_13", method.GetBook)
 		booksAPI.POST("/", method.AddBook)
-		// booksAPI.PATCH("/:id", method.UpdateBook)
+		booksAPI.PATCH("/:isbn_13", method.UpdateBook)
 		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
 	}
 
@@ -75,7 +75,7 @@ func GetRouter() *gin.Engine {
 		publishersAPI.GET("/", method.GetPublishers)
 		publishersAPI.GET("/:id", method.GetPublisher)
 		publishersAPI.POST("/", method.AddPublisher)
-		// // publishersAPI.PATCH("/:id", method.UpdatePublisher)
+		publishersAPI.PATCH("/:id", method.UpdatePublisher)
 		publishersAPI.DELETE("/:id", method.DeletePublisher)		
 	}
 
