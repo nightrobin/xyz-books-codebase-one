@@ -64,11 +64,15 @@
                             <tr>
                             <td>{{$book.ID}}</td>
                             <td>
+                                {{ if $book.Isbn13 }}
                                 <a href="/ui/books/view/{{$book.Isbn13}}"><i class="bi bi-eye-fill"></i></a>
+                                {{ else }}
+                                <i class="bi bi-eye-slash-fill" data-bs-toggle="tooltip" data-bs-placement="top" title="Viewing is disabled, until the ISBN-13 is saved for this book."></i>
+                                {{ end }}
                                 &nbsp;
-                                <a href="/ui/books/update-form/{{$book.Isbn13}}"><i class="bi bi-pencil-fill"></a></i>
+                                <a href="/ui/books/update-form/{{$book.ID}}"><i class="bi bi-pencil-fill"></a></i>
                                 &nbsp;
-                                <a href="/ui/books/delete/{{$book.Isbn13}}"><i class="bi bi-trash-fill"></a></i>
+                                <a href="/ui/books/delete/{{$book.ID}}"><i class="bi bi-trash-fill"></a></i>
                             </td>
                             <td>{{$book.Title}}</td>
                             <td>{{$book.Author}}</td>

@@ -260,10 +260,10 @@ func UISubmitAddBookForm(c *gin.Context) {
 }
 
 func UIUpdateBookForm(c *gin.Context) {
-	isbn_13 := c.Param("isbn_13")
+	ID := c.Param("id")
 	
 	var book model.Book
-	Db.Where("isbn_13 = ?", isbn_13).First(&book)
+	Db.Where("id = ?", ID).First(&book)
 
 	var bookAuthors []model.BookAuthor
 	Db.Where("book_id = ?", book.ID).Find(&bookAuthors)
@@ -295,7 +295,7 @@ func UIUpdateBookForm(c *gin.Context) {
 }
 
 func UISubmitUpdateBookForm(c *gin.Context) {
-	Isbn13 := c.Param("isbn_13")
+	ID := c.Param("id")
 
 	var book model.Book
 	c.ShouldBind(&book)
@@ -316,7 +316,7 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 	}
 
 	var existingBook model.Book
-	result := Db.Where("isbn_13 = ?", Isbn13).First(&existingBook)
+	result := Db.Where("id = ?", ID).First(&existingBook)
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		pageData.Message = "Cannot update the book."
@@ -724,18 +724,9 @@ func AddBook(c *gin.Context) {
 }
 
 func UpdateBook(c *gin.Context) {
-	Isbn13 := c.Param("isbn_13")
+	ID := c.Param("id")
 	
 	var errors []model.ApiError
-
-	if !IsbnValidator(Isbn13) {
-		response := model.Response[map[string]string]{
-			Message: "Invalid ISBN 13",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
-	}
 
 	var book model.Book
 
@@ -744,7 +735,7 @@ func UpdateBook(c *gin.Context) {
 	}
 
 	var existingBook model.Book
-	result := Db.Table("books").Where("isbn_13 = ?", Isbn13).First(&existingBook)
+	result := Db.Table("books").Where("id = ?", ID).First(&existingBook)
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
