@@ -20,7 +20,7 @@
 ## Scope & Limitations
 - As Frontend Frameworks are **not allowed** to be used, HTML Templates were used instead to handle the Client UI for the codebase 1.
 - For the requirement ***"Every specific record page/endpoint should be given its ISBN-13 in the URL path."*** It create an issue if the ISBN-13 is not yet set in a particular book. To properly handle this, viewing of that record is only allowed in the CRUD UI: Books Index and in the API: Books - Get All.
-- The specific fetching and viewing of the book will be allowed once that book has been set a valid ISBN-13.
+- The specific fetching and viewing of the book will be allowed, once that book has been set a valid ISBN-13.
 - I used MySQL for this project.
 
 ## Versions used
