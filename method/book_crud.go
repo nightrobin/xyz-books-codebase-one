@@ -1,7 +1,6 @@
 package method
 
 import(
-	"fmt"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -878,12 +877,10 @@ func UpdateBook(c *gin.Context) {
 
 	Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("book_authors").Where("book_id = ?", existingBook.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
-			fmt.Println(err)
 			return err
 		}
 
 		if err := tx.Table("books").Save(&existingBook).Error; err != nil {
-			fmt.Println(err)
 			return err
 		}
 
@@ -893,7 +890,6 @@ func UpdateBook(c *gin.Context) {
 			bookAuthor.AuthorID = v
 
 			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
-				fmt.Println(err)
 				return err
 			}
 		}
@@ -962,7 +958,6 @@ func DeleteBook(c *gin.Context) {
 	
 		return nil
 	})
-	
 	
 	return
 }
