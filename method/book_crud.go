@@ -35,8 +35,8 @@ type authorIDs struct {
 type apiBookData struct {
 	ID				uint64		`json:"ID"`
 	Title			string		`json:"Title"`
-	Isbn13			string		`json:"Isbn13"`
-	Isbn10			string		`json:"Isbn10"`
+	Isbn13			string		`json:"Isbn13" gorm:"column:isbn_13"`
+	Isbn10			string		`json:"Isbn10" gorm:"column:isbn_10"`
 	PublicationYear	int16		`json:"PublicationYear"`
 	PublisherID		uint64		`json:"PublisherID"`
 	ImageURL		string		`json:"ImageURL"`
@@ -575,10 +575,9 @@ func GetBook(c *gin.Context) {
 	
 	// TODO Validate ISBN 13 or ISBN 10 first
 	
-	var book model.Book
-	book.Isbn13 = Isbn13
+	var book apiBookData
 
-	result := Db.Where("isbn_13 = ?", book.Isbn13).First(&book)
+	result := Db.Table("books b").Select("b.id", "b.title", "CONCAT('[', GROUP_CONCAT('', a.id, ''), ']') author_ids", "b.isbn_13", "b.isbn_10", "b.publication_year", "b.publisher_id", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Where("b.isbn_13 = ?", Isbn13).Group("b.id").First(&book)
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
