@@ -16,10 +16,10 @@ import (
 func main() {
 	// Load Environment Variables
 	ex, err := os.Executable()
-    if err != nil {
-        panic(err)
-    }
-    exPath := filepath.Dir(ex)
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
 
 	err = godotenv.Load(exPath + "/.env")
 	if err != nil {
