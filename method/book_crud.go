@@ -1,6 +1,8 @@
 package method
 
 import(
+	"fmt"
+	// "io/ioutil"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -728,16 +730,15 @@ func UpdateBook(c *gin.Context) {
 	
 	var errors []model.ApiError
 
-	var book model.Book
+	var book model.BookUpdate
 
 	if err := c.BindJSON(&book); err != nil {
 		return
 	}
-
+	
 	var existingBook model.Book
 	result := Db.Table("books").Where("id = ?", ID).First(&existingBook)
-	// fmt.Println(existingBook)
-	// return
+	
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
 			Message: "Book not found with the given ID.",
