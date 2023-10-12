@@ -1,11 +1,8 @@
 package method
 
 import(
-	// "fmt"
 	"encoding/json"
-	"html/template"
 	"net/http"
-	"log"
 	"strings"
 	"strconv"
 	"sync"
@@ -106,21 +103,9 @@ func UIPublisherIndex(c *gin.Context) {
 			data.IsNextEnabled = false
 		}
 
-		w := c.Writer
-
-		parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/index.html")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpl := template.Must(parsedIndexTemplate, err)
+		RenderPage(c, "/templates/publishers/index.html", data)
 		
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
+		return
 	}()
 	
 	wg.Wait()

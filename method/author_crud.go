@@ -1,11 +1,8 @@
 package method
 
 import(
-	// "fmt"
 	"encoding/json"
-	"html/template"
 	"net/http"
-	"log"
 	"strings"
 	"strconv"
 	"sync"
@@ -108,21 +105,9 @@ func UIAuthorIndex(c *gin.Context) {
 			data.IsNextEnabled = false
 		}
 
-		w := c.Writer
+		RenderPage(c, "/templates/authors/index.html", data)
 
-		parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/index.html")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpl := template.Must(parsedIndexTemplate, err)
-		
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
+		return
 	}()
 	
 	wg.Wait()
