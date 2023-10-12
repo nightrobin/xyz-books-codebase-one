@@ -10,7 +10,6 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -329,6 +328,19 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 		return
 	}
 
+	var existingBook model.Book
+	result := Db.Where("isbn_13 = ?", Isbn13).First(&existingBook)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "Cannot update the book."
+		
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Book not found with the given ISBN 13."}}
+		
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+
 	var hasIsbn bool = false
 
 	var countIsbn13 int64
@@ -342,7 +354,7 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 		}
 
 		hasIsbn = true
-		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+		Db.Table("books").Where("id != ? and isbn_13 = ?", existingBook.ID, book.Isbn13).Count(&countIsbn13)
 	}
 
 	var countIsbn10 int64
@@ -357,7 +369,7 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 
 		hasIsbn = true
 
-		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+		Db.Table("books").Where("id != ? and isbn_10 = ?", existingBook.ID, book.Isbn10).Count(&countIsbn10)
 	}
 
 	if !hasIsbn {
@@ -379,19 +391,6 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 	if countIsbn10 > 0 {
 		pageData.Message = "Cannot update the book."
 		pageData.Errors = []model.ApiError{model.ApiError{Param: "Isbn10", Message: "ISBN 10 has already been used in other book."}}
-		RenderPage(c, "/templates/books/result.html", pageData)
-		
-		return
-	}
-
-	var existingBook model.Book
-	result := Db.Where("isbn_13 = ?", Isbn13).First(&existingBook)
-
-	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
-		pageData.Message = "Cannot update the book."
-		
-		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Book not found with the given ISBN 13."}}
-		
 		RenderPage(c, "/templates/books/result.html", pageData)
 		
 		return
@@ -603,7 +602,7 @@ func GetBook(c *gin.Context) {
 	
 	if !IsbnValidator(Isbn13) {
 		response := model.Response[map[string]string]{
-			Message: "The ISBN 13 given is invalid.",
+			Message: "Invalid ISBN 13",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -648,86 +647,38 @@ func AddBook(c *gin.Context) {
 		return
 	}
 
-	err := Validate.Struct(book)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
-
-		response := model.Response[map[string]string]{
-			Message: "Field Errors",
-			Data:    errors,
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
-	}
+	var errors []model.ApiError
 
 	var hasIsbn bool = false
 	
 	if len(book.Isbn13) > 0 {
 		if !IsbnValidator(book.Isbn13) {
-			response := model.Response[map[string]string]{
-				Message: "The ISBN 13 given is invalid.",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Invalid ISBN 13"})
 		}
 
 		hasIsbn = true
 		var countIsbn13 int64
 		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
 		if countIsbn13 > 0 {
-			response := model.Response[map[string]string]{
-				Message: "Duplicate ISBN 13",
-			}
-
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Duplicate ISBN 13"})
 		}
 	}
 	
 	if len(book.Isbn10) > 0 {
 		if !IsbnValidator(book.Isbn10) {
-			response := model.Response[map[string]string]{
-				Message: "The ISBN 10 given is invalid.",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn10", Message: "Invalid ISBN 10"})
 		}
 
 		hasIsbn = true
 		var countIsbn10 int64
 		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
 		if countIsbn10 > 0 {
-			response := model.Response[map[string]string]{
-				Message: "Duplicate ISBN 10",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn10", Message: "Duplicate ISBN 10"})
 		}
 	}
 
 	if !hasIsbn {
-		response := model.Response[map[string]string]{
-			Message: "Atleast ISBN 13 or ISBN 10 is required.",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
-	}
-
-	if len(book.AuthorIDs) == 0 {
-		response := model.Response[map[string]string]{
-			Message: "Atleast one valid Author ID is required.",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
+		errors = append(errors, model.ApiError{Param:"ISBN", Message: "Atleast ISBN 13 or ISBN 10 is required."})
 	}
 	
 	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
@@ -740,9 +691,16 @@ func AddBook(c *gin.Context) {
 	Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
 
 	if countAuthor < int64(len(book.AuthorIDs)) {
+		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Author ID(s) not valid."})
+	}
+
+	errors = append(errors, FieldValidator(book)...)
+
+	if errors != nil {
 		response := model.Response[map[string]string]{
-			Message: "Author ID(s) not valid.",
+			Message: "Field Errors",
 		}
+		response.Errors = errors
 
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
@@ -787,9 +745,11 @@ func AddBook(c *gin.Context) {
 func UpdateBook(c *gin.Context) {
 	Isbn13 := c.Param("isbn_13")
 	
+	var errors []model.ApiError
+
 	if !IsbnValidator(Isbn13) {
 		response := model.Response[map[string]string]{
-			Message: "The ISBN 13 given is invalid.",
+			Message: "Invalid ISBN 13",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -799,22 +759,6 @@ func UpdateBook(c *gin.Context) {
 	var book model.Book
 
 	if err := c.BindJSON(&book); err != nil {
-		return
-	}
-
-	err := Validate.Struct(book)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
-
-		response := model.Response[map[string]string]{
-			Message: "Field Errors",
-			Data:    errors,
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -834,66 +778,36 @@ func UpdateBook(c *gin.Context) {
 	
 	if len(book.Isbn13) > 0 {
 		if !IsbnValidator(book.Isbn13) {
-			response := model.Response[map[string]string]{
-				Message: "The ISBN 13 given is invalid.",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Invalid ISBN 13"})
 		}
 
 		hasIsbn = true
 		var countIsbn13 int64
-		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+		Db.Table("books").Where("id != ? and isbn_13 = ?", existingBook.ID, book.Isbn13).Count(&countIsbn13)
 		if countIsbn13 > 0 {
-			response := model.Response[map[string]string]{
-				Message: "Duplicate ISBN 13",
-			}
-
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Duplicate ISBN 13"})
 		}
 	}
 	
 	if len(book.Isbn10) > 0 {
 		if !IsbnValidator(book.Isbn10) {
-			response := model.Response[map[string]string]{
-				Message: "The ISBN 10 given is invalid.",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Invalid ISBN 13"})
 		}
 
 		hasIsbn = true
 		var countIsbn10 int64
-		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+		Db.Table("books").Where("id != ? and isbn_10 = ?", existingBook.ID, book.Isbn10).Count(&countIsbn10)
 		if countIsbn10 > 0 {
-			response := model.Response[map[string]string]{
-				Message: "Duplicate ISBN 10",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
-			return
+			errors = append(errors, model.ApiError{Param:"Isbn10", Message: "Duplicate ISBN 10"})
 		}
 	}
 
 	if !hasIsbn {
-		response := model.Response[map[string]string]{
-			Message: "Atleast ISBN 13 or ISBN 10 is required.",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
+		errors = append(errors, model.ApiError{Param:"ISBN", Message: "Atleast ISBN 13 or ISBN 10 is required."})
 	}
-
+	
 	if len(book.AuthorIDs) == 0 {
-		response := model.Response[map[string]string]{
-			Message: "Atleast one valid Author ID is required.",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
+		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Atleast one valid Author ID is required."})
 	}
 	
 	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
@@ -906,12 +820,7 @@ func UpdateBook(c *gin.Context) {
 	Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
 
 	if countAuthor < int64(len(book.AuthorIDs)) {
-		response := model.Response[map[string]string]{
-			Message: "Author ID(s) not valid.",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
+		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Author ID(s) not valid."})
 	}
 
 	if existingBook.Title != book.Title {
@@ -944,6 +853,20 @@ func UpdateBook(c *gin.Context) {
 
 	if existingBook.ListPrice != book.ListPrice {
 		existingBook.ListPrice = book.ListPrice
+	}
+	
+	existingBook.AuthorIDs = book.AuthorIDs
+
+	errors = append(errors, FieldValidator(existingBook)...)
+
+	if errors != nil {
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+		}
+		response.Errors = errors
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
 	}
 
 	Db.Transaction(func(tx *gorm.DB) error {
@@ -989,9 +912,11 @@ func UpdateBook(c *gin.Context) {
 func DeleteBook(c *gin.Context) {
 	Isbn13 := c.Param("isbn_13")
 
+	var errors []model.ApiError
+
 	if !IsbnValidator(Isbn13) {
 		response := model.Response[map[string]string]{
-			Message: "The ISBN 13 given is invalid.",
+			Message: "Invalid ISBN 13",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -1011,6 +936,16 @@ func DeleteBook(c *gin.Context) {
 		return
 	}
 
+	if errors != nil {
+		response := model.Response[map[string]string]{
+			Message: "Field Errors",
+		}
+		response.Errors = errors
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
+
 	Db.Transaction(func(tx *gorm.DB) error {
 		
 		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
@@ -1018,11 +953,6 @@ func DeleteBook(c *gin.Context) {
 		}
 
 		if err := tx.Table("books").Where("id = ?", book.ID).Unscoped().Delete(&model.Book{}).Error; err != nil {
-			response := model.Response[map[string]string]{
-				Message: "Cannot delete this book.",
-			}
-	
-			c.IndentedJSON(http.StatusBadRequest, response)
 			return err
 		}
 

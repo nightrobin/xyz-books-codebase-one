@@ -6,16 +6,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func FieldValidatorMessage(fieldError validator.FieldError) string {
-	switch fieldError.Tag() {
-	case "required":
-		return "This field is required"
-	case "max":
-		return "This field exceeds the maximum limit"
-	}
-	return fieldError.Error()
-}
-
 func FieldValidator(s interface{}) []model.ApiError {
 	var apiErrors []model.ApiError
 	err := Validate.Struct(s)
@@ -29,3 +19,15 @@ func FieldValidator(s interface{}) []model.ApiError {
 	}
 	return apiErrors
 }
+
+func FieldValidatorMessage(fieldError validator.FieldError) string {
+	switch fieldError.Tag() {
+	case "required":
+		return "This field is required"
+	case "max":
+		return "This field exceeds the maximum limit"
+	}
+	return fieldError.Error()
+}
+
+
