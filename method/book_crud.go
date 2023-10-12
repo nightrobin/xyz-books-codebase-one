@@ -1,8 +1,6 @@
 package method
 
 import(
-	"fmt"
-	// "io/ioutil"
 	"encoding/json"
 	"net/http"
 	"strconv"
