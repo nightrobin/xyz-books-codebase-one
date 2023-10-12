@@ -1,6 +1,7 @@
 package method
 
 import(
+	// "fmt"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -321,7 +322,7 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		pageData.Message = "Cannot update the book."
 		
-		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Book not found with the given ISBN 13."}}
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ID", Message: "Book not found with the given ID."}}
 		
 		RenderPage(c, "/templates/books/result.html", pageData)
 		
@@ -383,35 +384,35 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 		return
 	}
 
-	if existingBook.Title != book.Title {
+	if existingBook.Title != book.Title && len(book.Title) > 0 {
 		existingBook.Title = book.Title
 	}
-	
-	if existingBook.Isbn13 != book.Isbn13 {
+
+	if existingBook.Isbn13 != book.Isbn13 && len(book.Isbn13) > 0 {
 		existingBook.Isbn13 = book.Isbn13
 	}
-	
-	if existingBook.Isbn10 != book.Isbn10 {
+
+	if existingBook.Isbn10 != book.Isbn10 && len(book.Isbn10) > 0 {
 		existingBook.Isbn10 = book.Isbn10
 	}
 
-	if existingBook.PublicationYear != book.PublicationYear {
+	if book.PublicationYear != 0 {
 		existingBook.PublicationYear = book.PublicationYear
 	}
 
-	if existingBook.PublisherID != book.PublisherID {
+	if book.PublisherID != 0 {
 		existingBook.PublisherID = book.PublisherID
 	}
-
-	if existingBook.ImageURL != book.ImageURL {
+	
+	if existingBook.ImageURL != book.ImageURL && len(book.ImageURL) > 0 {
 		existingBook.ImageURL = book.ImageURL
 	}
-
-	if existingBook.Edition != book.Edition {
+	
+	if existingBook.Edition != book.Edition && len(book.Edition) > 0 {
 		existingBook.Edition = book.Edition
 	}
 
-	if existingBook.ListPrice != book.ListPrice {
+	if existingBook.ListPrice != book.ListPrice && book.ListPrice > 0 {
 		existingBook.ListPrice = book.ListPrice
 	}
 
@@ -736,10 +737,11 @@ func UpdateBook(c *gin.Context) {
 
 	var existingBook model.Book
 	result := Db.Table("books").Where("id = ?", ID).First(&existingBook)
-
+	// fmt.Println(existingBook)
+	// return
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Book not found with the given ISBN 13.",
+			Message: "Book not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -778,56 +780,54 @@ func UpdateBook(c *gin.Context) {
 		errors = append(errors, model.ApiError{Param:"ISBN", Message: "Atleast ISBN 13 or ISBN 10 is required."})
 	}
 	
-	if len(book.AuthorIDs) == 0 {
-		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Atleast one valid Author ID is required."})
-	}
-	
 	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
-	
-	var countAuthor int64
-	authorIDsWhereString := string(authorIDsJson)
-	authorIDsWhereString = strings.Replace(authorIDsWhereString, "[", "(", 1)
-	authorIDsWhereString = strings.Replace(authorIDsWhereString, "]", ")", 1)
-	
-	Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
 
-	if countAuthor < int64(len(book.AuthorIDs)) {
-		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Author ID(s) not valid."})
+	if len(book.AuthorIDs) > 0 {
+		var countAuthor int64
+		authorIDsWhereString := string(authorIDsJson)
+		authorIDsWhereString = strings.Replace(authorIDsWhereString, "[", "(", 1)
+		authorIDsWhereString = strings.Replace(authorIDsWhereString, "]", ")", 1)
+		
+		Db.Table("authors").Where("id IN " + authorIDsWhereString).Count(&countAuthor)
+		
+		if countAuthor < int64(len(book.AuthorIDs)) {
+			errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Author ID(s) not valid."})
+		}
+
+		existingBook.AuthorIDs = book.AuthorIDs
 	}
-
-	if existingBook.Title != book.Title {
+	
+	if existingBook.Title != book.Title && len(book.Title) > 0 {
 		existingBook.Title = book.Title
 	}
 
-	if existingBook.Isbn13 != book.Isbn13 {
+	if existingBook.Isbn13 != book.Isbn13 && len(book.Isbn13) > 0 {
 		existingBook.Isbn13 = book.Isbn13
 	}
 
-	if existingBook.Isbn10 != book.Isbn10 {
+	if existingBook.Isbn10 != book.Isbn10 && len(book.Isbn10) > 0 {
 		existingBook.Isbn10 = book.Isbn10
 	}
-	
-	if existingBook.PublicationYear != book.PublicationYear {
+
+	if book.PublicationYear != 0 {
 		existingBook.PublicationYear = book.PublicationYear
 	}
 
-	if existingBook.PublisherID != book.PublisherID {
+	if book.PublisherID != 0 {
 		existingBook.PublisherID = book.PublisherID
 	}
-
-	if existingBook.ImageURL != book.ImageURL {
+	
+	if existingBook.ImageURL != book.ImageURL && len(book.ImageURL) > 0 {
 		existingBook.ImageURL = book.ImageURL
 	}
 	
-	if existingBook.Edition != book.Edition {
+	if existingBook.Edition != book.Edition && len(book.Edition) > 0 {
 		existingBook.Edition = book.Edition
 	}
 
-	if existingBook.ListPrice != book.ListPrice {
+	if existingBook.ListPrice != book.ListPrice && book.ListPrice > 0 {
 		existingBook.ListPrice = book.ListPrice
 	}
-	
-	existingBook.AuthorIDs = book.AuthorIDs
 
 	errors = append(errors, FieldValidator(existingBook)...)
 
@@ -882,26 +882,17 @@ func UpdateBook(c *gin.Context) {
 }
 
 func DeleteBook(c *gin.Context) {
-	Isbn13 := c.Param("isbn_13")
+	ID := c.Param("id")
 
 	var errors []model.ApiError
 
-	if !IsbnValidator(Isbn13) {
-		response := model.Response[map[string]string]{
-			Message: "Invalid ISBN 13",
-		}
-
-		c.IndentedJSON(http.StatusBadRequest, response)
-		return
-	}
-
 	var book model.Book
 
-	result := Db.Where("isbn_13 = ?", Isbn13).First(&book)
+	result := Db.Where("id = ?", ID).First(&book)
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Book not found with the given ISBN 13.",
+			Message: "Book not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)

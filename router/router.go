@@ -59,8 +59,8 @@ func GetRouter() *gin.Engine {
 		booksAPI.GET("/", method.GetBooks)
 		booksAPI.GET("/:isbn_13", method.GetBook)
 		booksAPI.POST("/", method.AddBook)
-		booksAPI.PATCH("/:isbn_13", method.UpdateBook)
-		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
+		booksAPI.PATCH("/:id", method.UpdateBook)
+		booksAPI.DELETE("/:id", method.DeleteBook)		
 	}
 
 	publishersAPI := router.Group("/api/publishers")

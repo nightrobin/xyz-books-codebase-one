@@ -10,5 +10,5 @@ type Book struct {
 	ImageURL		string		`form:"ImageURL" json:"ImageURL"`
 	Edition			string		`form:"Edition" json:"Edition"`
 	ListPrice		float32		`form:"ListPrice" json:"ListPrice" validate:"required"`
-	AuthorIDs		[]uint64	`gorm:"-" json:"AuthorIDs" validate:"required"`
+	AuthorIDs		[]uint64	`gorm:"-" json:"AuthorIDs" validate:"-"`
 }
