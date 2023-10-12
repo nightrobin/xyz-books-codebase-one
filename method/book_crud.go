@@ -3,13 +3,10 @@ package method
 import(
 	"fmt"
 	"encoding/json"
-	"html/template"
 	"net/http"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
-
 	
 	"xyz-books/model"
 	
@@ -434,64 +431,44 @@ func checkIfIDIsInExistingAuthorIDs(authorID uint64, bookAuthors []model.BookAut
 }
 
 func UIViewBook(c *gin.Context) {
-	isbn_13 := c.Param("isbn_13")
+	Isbn13 := c.Param("isbn_13")
 
 	var book DisplayBook
+	result := Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", Isbn13).Group("b.id").First(&book)
 
-	Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		var pageData model.PageData
+		pageData.Message = "This Book does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Invalid ISBN 13 given."}}
 
-	w := c.Writer
+		RenderPage(c, "/templates/books/result.html", pageData)
 
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/view_one.html")
-	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, book); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/books/view_one.html", book)
 
 	return
 }
 
 func UIDeleteBook(c *gin.Context) {
-	isbn_13 := c.Param("isbn_13")
+	Isbn13 := c.Param("isbn_13")
+	
+	var pageData model.PageData
 
 	var book model.Book
-	result := Db.Where("isbn_13 = ?", isbn_13).First(&book)
-	
-	type PageData struct {
-		Message string
-		HasError bool
-	}
+	result := Db.Where("isbn_13 = ?", Isbn13).First(&book)
 
-	var pageData PageData
-	pageData.Message = "Successfully deleted Book" 
-	pageData.HasError = false
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "This Book does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Invalid ISBN 13 given."}}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+		RenderPage(c, "/templates/books/result.html", pageData)
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if result.Error == gorm.ErrRecordNotFound {
-		pageData.Message = "Book not found." 
-		pageData.HasError = true
-		if err := tmpl.Execute(w, pageData); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
 		return
 	}
 
-	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+	Db.Transaction(func(tx *gorm.DB) error {
 	
 		if err := tx.Table("book_authors").Where("book_id = ?", book.ID).Unscoped().Delete(&model.BookAuthor{}).Error; err != nil {
 			return err
@@ -504,14 +481,9 @@ func UIDeleteBook(c *gin.Context) {
 		return nil
 	})
 
-	if transactionErr != nil {
-		pageData.Message = "Cannot delete this Book." 
-		pageData.HasError = true
-	}
+	pageData.Message = "Successfully deleted Book."
 
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/books/result.html", pageData)
 
 	return
 }
