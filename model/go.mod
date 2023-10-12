@@ -1,4 +1,4 @@
-module xyz-books/model
+module xyz-books-codebase-one/model
 
 go 1.21.1
 

@@ -1,7 +1,7 @@
 package method
 
 import (
-	"xyz-books/model"
+	"xyz-books-codebase-one/model"
 
 	"github.com/go-playground/validator/v10"
 )

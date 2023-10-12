@@ -1,4 +1,4 @@
-module xyz-books/method
+module xyz-books-codebase-one/method
 
 go 1.21.1
 
@@ -7,8 +7,8 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/joho/godotenv v1.5.1
 	gorm.io/gorm v1.25.4
-	xyz-books/model v0.0.0-00010101000000-000000000000
-	xyz-books/orm v0.0.0-00010101000000-000000000000
+	xyz-books-codebase-one/model v0.0.0-00010101000000-000000000000
+	xyz-books-codebase-one/orm v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -42,6 +42,6 @@ require (
 	gorm.io/driver/mysql v1.5.1 // indirect
 )
 
-replace xyz-books/orm => ../orm
+replace xyz-books-codebase-one/orm => ../orm
 
-replace xyz-books/model => ../model
+replace xyz-books-codebase-one/model => ../model

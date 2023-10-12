@@ -1,7 +1,7 @@
 package router
 
 import (
-	"xyz-books/method"
+	"xyz-books-codebase-one/method"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,16 +1,16 @@
-module xyz-books/router
+module xyz-books-codebase-one/router
 
 go 1.21.1
 
-replace xyz-books/method => ../method
+replace xyz-books-codebase-one/method => ../method
 
-replace xyz-books/model => ../model
+replace xyz-books-codebase-one/model => ../model
 
-replace xyz-books/orm => ../orm
+replace xyz-books-codebase-one/orm => ../orm
 
 require (
 	github.com/gin-gonic/gin v1.9.1
-	xyz-books/method v0.0.0-00010101000000-000000000000
+	xyz-books-codebase-one/method v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -44,6 +44,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.1 // indirect
 	gorm.io/gorm v1.25.4 // indirect
-	xyz-books/model v0.0.0-00010101000000-000000000000 // indirect
-	xyz-books/orm v0.0.0-00010101000000-000000000000 // indirect
+	xyz-books-codebase-one/model v0.0.0-00010101000000-000000000000 // indirect
+	xyz-books-codebase-one/orm v0.0.0-00010101000000-000000000000 // indirect
 )

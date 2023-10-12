@@ -7,7 +7,7 @@ import(
 	"strconv"
 	"sync"
 	
-	"xyz-books/model"
+	"xyz-books-codebase-one/model"
 	
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

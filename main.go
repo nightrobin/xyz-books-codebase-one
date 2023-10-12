@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"xyz-books/dbmigration"
-	"xyz-books/router"
+	"xyz-books-codebase-one/dbmigration"
+	"xyz-books-codebase-one/router"
 	
 	"github.com/joho/godotenv"
 )

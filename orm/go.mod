@@ -1,4 +1,4 @@
-module xyz-books/orm
+module xyz-books-codebase-one/orm
 
 go 1.21.1
 

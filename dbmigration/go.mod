@@ -1,4 +1,4 @@
-module xyz-books/dbmigration
+module xyz-books-codebase-one/dbmigration
 
 go 1.21.1
 
