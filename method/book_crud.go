@@ -30,19 +30,6 @@ type authorIDs struct {
 	AuthorIDs []uint64 `form:"AuthorIDs[]"`
 }
 
-type apiBookData struct {
-	ID				uint64		`json:"ID"`
-	Title			string		`json:"Title"`
-	Isbn13			string		`json:"Isbn13" gorm:"column:isbn_13"`
-	Isbn10			string		`json:"Isbn10" gorm:"column:isbn_10"`
-	PublicationYear	int16		`json:"PublicationYear"`
-	PublisherID		uint64		`json:"PublisherID"`
-	ImageURL		string		`json:"ImageURL"`
-	Edition			string		`json:"Edition"`
-	ListPrice		float32		`json:"ListPrice"`
-	AuthorIDs		string		`json:"AuthorIDs" gorm:"column:author_ids"`
-}
-
 func UIBookIndex(c *gin.Context) {
 
 	keyword := c.DefaultQuery("keyword", "")
@@ -548,7 +535,7 @@ func GetBooks(c *gin.Context) {
 	go func () {
 		defer wg.Done()
 
-		var books []apiBookData
+		var books []model.ApiBookData
 		var result *gorm.DB
 		
 		if (len(keyword) != 0){
@@ -573,18 +560,12 @@ func GetBooks(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, response)
 			return
 		}
-		
-		booksDataJson, _ := json.Marshal(books)
-		booksDataJsonStr := string(booksDataJson) 
-		
-		data := make(map[string]string)
-		data["books"] = booksDataJsonStr
 
-		response := model.Response[map[string]string]{
+		response := model.Response[[]model.ApiBookData]{
 			Message: "Successfully retrieved the books.",
 			Count: result.RowsAffected,
 			Page: int64(page),
-			Data:    data,
+			Data:    books,
 		}
 
 		c.IndentedJSON(http.StatusOK, response)
@@ -609,7 +590,7 @@ func GetBook(c *gin.Context) {
 		return
 	}
 	
-	var book apiBookData
+	var book model.ApiBookData
 
 	result := Db.Table("books b").Select("b.id", "b.title", "CONCAT('[', GROUP_CONCAT('', a.id, ''), ']') author_ids", "b.isbn_13", "b.isbn_10", "b.publication_year", "b.publisher_id", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Where("b.isbn_13 = ?", Isbn13).Group("b.id").First(&book)
 
