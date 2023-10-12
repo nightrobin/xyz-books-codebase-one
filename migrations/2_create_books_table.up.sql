@@ -1,8 +1,8 @@
 CREATE TABLE `books` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
-  `isbn_13` char(13) NOT NULL,
-  `isbn_10` char(10) NOT NULL,
+  `isbn_13` char(13) NULL,
+  `isbn_10` char(10) NULL,
   `publication_year` int(4) NOT NULL,
   `publisher_id` int(11) NOT NULL,
   `image_url` text DEFAULT NULL,
