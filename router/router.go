@@ -59,7 +59,7 @@ func GetRouter() *gin.Engine {
 		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
 	}
 
-	publishersUI := router.Group("/publishers/ui")
+	publishersUI := router.Group("/ui/publishers")
 	{
 		publishersUI.GET("/", method.UIPublisherIndex)
 		publishersUI.GET("/add-form", method.UIAddPublisherForm)

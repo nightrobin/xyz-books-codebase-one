@@ -4,24 +4,21 @@ import(
 	// "fmt"
 	"encoding/json"
 	"html/template"
-	"log"
 	"net/http"
-	"strconv"
+	"log"
 	"strings"
+	"strconv"
 	"sync"
 	
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
-type publisherForm struct {
-    Name string `form:"name"`
-}
 
 func UIPublisherIndex(c *gin.Context) {
+
 	keyword := c.DefaultQuery("keyword", "")
 	keyword = strings.TrimLeft(keyword, " ") 
 	keyword = strings.TrimRight(keyword, " ")
@@ -45,7 +42,7 @@ func UIPublisherIndex(c *gin.Context) {
 		if (len(keyword) != 0){
 		
 			whereString := " name LIKE '%" + keyword + "%' " 
-
+			
 			Db.Table("publishers").Select("id", "name").Where(whereString).Limit(limit).Offset(pageNumber).Find(&publishers)
 			Db.Table("publishers").Select("id", "name").Where(whereString).Count(&count)
 		
@@ -133,25 +130,25 @@ func UIPublisherIndex(c *gin.Context) {
 
 func UIAddPublisherForm(c *gin.Context) {
 	c.File(ExPath + "/templates/publishers/add_form.html")
-
 	return
 }
 
 func UISubmitAddPublisherForm(c *gin.Context) {
-	var publisherForm publisherForm
-	c.ShouldBind(&publisherForm)
+	var publisher model.Publisher
+	c.ShouldBind(&publisher)
+	
+	var pageData model.PageData
+	
+	pageData.Errors = FieldValidator(publisher)
 
-	type PageData struct {
-		Message string
-		HasError bool
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot add the Publisher."
+		RenderPage(c, "/templates/publishers/result.html", pageData)
+		return
 	}
 
-	var pageData PageData
-	pageData.Message = "Successfully added a Publisher"
-	pageData.HasError = false
-
 	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Table("publishers").Create(&publisherForm).Error; err != nil {
+		if err := tx.Table("publishers").Create(&publisher).Error; err != nil {
 			return err
 		}
 
@@ -159,23 +156,16 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot add a Publisher." 
-		pageData.HasError = true
+		pageData.Message = "Cannot add the Publisher." 
+		RenderPage(c, "/templates/publishers/result.html", pageData)
+		return
 	}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData.Message = "Successfully added an Publisher" 
 
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
+	RenderPage(c, "/templates/publishers/result.html", pageData)
+	
 	return
 }
 
@@ -185,20 +175,7 @@ func UIUpdatePublisherForm(c *gin.Context) {
 	var publisher model.Publisher
 	Db.Where("id = ?", ID).First(&publisher)
 
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/update_form.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, publisher); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/publishers/update_form.html", publisher)
 
 	return
 }
@@ -206,25 +183,28 @@ func UIUpdatePublisherForm(c *gin.Context) {
 func UISubmitUpdatePublisherForm(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var publisher model.Publisher
 	c.ShouldBind(&publisher)
+
+	pageData.Errors = FieldValidator(publisher)
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot update the Publisher."
+
+		RenderPage(c, "/templates/publishers/result.html", pageData)
+
+		return
+	}
 
 	var existingPublisher model.Publisher
 	Db.Where("id = ?", ID).First(&existingPublisher)
 
-	existingPublisher.Name = publisher.Name
-
-	type PageData struct {
-		Message string
-		HasError bool
+	if existingPublisher.Name != publisher.Name {
+		existingPublisher.Name = publisher.Name
 	}
-
-	var pageData PageData
-	pageData.Message = "Successfully updated Publisher"
-	pageData.HasError = false
-
-	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 	
+	Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(&existingPublisher).Error; err != nil {
 			return err
 		}
@@ -232,23 +212,9 @@ func UISubmitUpdatePublisherForm(c *gin.Context) {
 		return nil
 	})
 
-	if transactionErr != nil {
-		pageData.Message = "Cannot update Publisher." 
-		pageData.HasError = true
-	}
+	pageData.Message = "Successfully updated the Publisher"
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/publishers/result.html", pageData)
 
 	return
 }
@@ -256,24 +222,23 @@ func UISubmitUpdatePublisherForm(c *gin.Context) {
 func UIViewPublisher(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var publisher model.Publisher
-
-	Db.Where("id = ?", ID).First(&publisher)
-
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/view_one.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
+	c.ShouldBind(&publisher)
 	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	result := Db.Where("id = ?", ID).First(&publisher)
 
-	if err := tmpl.Execute(w, publisher); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "This Publisher does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ID", Message: "Invalid ID given."}}
+
+		RenderPage(c, "/templates/publishers/result.html", pageData)
+
+		return
 	}
+
+	RenderPage(c, "/templates/publishers/view_one.html", publisher)
 
 	return
 }
@@ -281,38 +246,23 @@ func UIViewPublisher(c *gin.Context) {
 func UIDeletePublisher(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var publisher model.Publisher
-	result := Db.Where("id = ?", ID).First(&publisher)
+	c.ShouldBind(&publisher)
 	
-	type PageData struct {
-		Message string
-		HasError bool
-	}
+	result := Db.Where("id = ?", ID).First(&publisher)
 
-	var pageData PageData
-	pageData.Message = "Successfully deleted Publisher" 
-	pageData.HasError = false
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "This Publisher does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ID", Message: "Invalid ID given."}}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/publishers/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+		RenderPage(c, "/templates/publishers/result.html", pageData)
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if result.Error == gorm.ErrRecordNotFound {
-		pageData.Message = "Publisher not found." 
-		pageData.HasError = true
-		if err := tmpl.Execute(w, pageData); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
 		return
 	}
 
 	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-	
 		if err := tx.Table("publishers").Where("id = ?", publisher.ID).Unscoped().Delete(&model.Publisher{}).Error; err != nil {
 			return err
 		}
@@ -321,13 +271,16 @@ func UIDeletePublisher(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot delete this Publisher because it is currently used in a book." 
-		pageData.HasError = true
+		pageData.Message = "Deletion failed"
+		pageData.Errors =  []model.ApiError{model.ApiError{Param: "Publisher", Message: "Cannot delete this Publisher because it is currently used in a book."}}
+		RenderPage(c, "/templates/publishers/result.html", pageData)
+
+		return
 	}
 
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	pageData.Message = "Successfully deleted Publisher."
+
+	RenderPage(c, "/templates/publishers/result.html", pageData)
 
 	return
 }
@@ -367,7 +320,7 @@ func GetPublishers(c *gin.Context) {
 
 		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 			response := model.Response[map[string]string]{
-				Message: "No Publishers yet / Publishers not found",
+				Message: "No Publishers yet / Publishers not found with the given keyword.",
 			}
 
 			c.IndentedJSON(http.StatusBadRequest, response)
@@ -381,7 +334,7 @@ func GetPublishers(c *gin.Context) {
 		data["publishers"] = publisherDataJsonStr
 
 		response := model.Response[map[string]string]{
-			Message: "Successfully retrieved publishers",
+			Message: "Successfully retrieved the publishers.",
 			Count: result.RowsAffected,
 			Page: int64(page),
 			Data:    data,
@@ -406,7 +359,7 @@ func GetPublisher(c *gin.Context) {
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Publisher not found",
+			Message: "Publisher not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -420,7 +373,7 @@ func GetPublisher(c *gin.Context) {
 	data["publisher"] = publisherDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully retrieved publisher",
+		Message: "Successfully retrieved the publisher.",
 		Count: result.RowsAffected,
 		Page: int64(1),
 		Data:	data,
@@ -433,22 +386,15 @@ func GetPublisher(c *gin.Context) {
 
 func AddPublisher(c *gin.Context) {
 	var publisher model.Publisher
+	c.ShouldBind(&publisher)
 
-	if err := c.BindJSON(&publisher); err != nil {
-		return
-	}
-
-	err := Validate.Struct(publisher)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
-
+	var errors []model.ApiError
+	errors = FieldValidator(publisher)
+	if errors != nil {
 		response := model.Response[map[string]string]{
 			Message: "Field Errors",
-			Data:    errors,
 		}
+		response.Errors = errors
 
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
@@ -469,7 +415,7 @@ func AddPublisher(c *gin.Context) {
 	data["publisher"] = publisherDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully added an Publisher",
+		Message: "Successfully added the Publisher",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
@@ -483,8 +429,8 @@ func AddPublisher(c *gin.Context) {
 func UpdatePublisher(c *gin.Context) {
 	ID := c.Param("id")
 
-	var publisher model.Publisher
-	c.ShouldBind(&publisher)
+	var newPublisher model.Publisher
+	c.ShouldBind(&newPublisher)
 
 	var existingPublisher model.Publisher
 	result := Db.Where("id = ?", ID).First(&existingPublisher)
@@ -498,28 +444,23 @@ func UpdatePublisher(c *gin.Context) {
 		return
 	}
 
-	err := Validate.Struct(publisher)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
-
+	if existingPublisher.Name != newPublisher.Name {
+		existingPublisher.Name = newPublisher.Name
+	}
+	
+	var errors []model.ApiError
+	errors = FieldValidator(existingPublisher)
+	if errors != nil {
 		response := model.Response[map[string]string]{
 			Message: "Field Errors",
-			Data:    errors,
 		}
+		response.Errors = errors
 
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
 	}
 
-	if existingPublisher.Name != publisher.Name {
-		existingPublisher.Name = publisher.Name
-	}
-	
 	Db.Transaction(func(tx *gorm.DB) error {
-	
 		if err := tx.Save(&existingPublisher).Error; err != nil {
 			return err
 		}
@@ -539,6 +480,7 @@ func UpdatePublisher(c *gin.Context) {
 		Page: int64(1),
 		Data:	data,
 	}
+	
 	c.IndentedJSON(http.StatusOK, response)
 
 	return
@@ -553,7 +495,7 @@ func DeletePublisher(c *gin.Context) {
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Publisher not found",
+			Message: "Publisher not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -572,7 +514,7 @@ func DeletePublisher(c *gin.Context) {
 		}
 
 		response := model.Response[map[string]string]{
-			Message: "Successfully deleted publisher",
+			Message: "Successfully deleted the publisher",
 			Count: result.RowsAffected,
 			Page: int64(1),
 		}
@@ -581,7 +523,6 @@ func DeletePublisher(c *gin.Context) {
 	
 		return nil
 	})
-	
 	
 	return
 }

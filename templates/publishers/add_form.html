@@ -12,24 +12,23 @@
             <hr/>
             <div class="row">
                 <div class="col-12">
-                    <a class="btn btn-success" href="/publishers/ui" role="button">Go to publishers</a>
+                    <a class="btn btn-success" href="/ui/publishers" role="button">Go to publishers</a>
                 </div>
             </div>
             <h3 class="text-center">Add a new Publisher</h3>
-            <br/>
             <div class="row p-2">
                 <div class="col-8 mx-auto">
                     <div class="card">
                         <div class="card-body">
                             <div class="card-text">
                                 <div class="table-responsive">
-                                    <form action="/publishers/ui/submit-add-form" method="POST">
+                                    <form action="/ui/publishers/submit-add-form" method="POST">
                                         <table class="table table-borderless">
                                             <tbody>
                                                 <tr>
                                                     <td><b>Name<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="name" name="name" required maxlength="255">
+                                                        <input type="text" class="form-control" name="Name" required maxlength="255">
                                                     </td>
                                                 </tr>
                                             </tbody>
