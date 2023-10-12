@@ -31,16 +31,7 @@ func GetRouter() *gin.Engine {
 		authorsUI.GET("/delete/:id", method.UIDeleteAuthor)
 	}
 
-	authorsAPI := router.Group("/api/authors")
-	{
-		authorsAPI.GET("/", method.GetAuthors)
-		authorsAPI.GET("/:id", method.GetAuthor)
-		authorsAPI.POST("/", method.AddAuthor)
-		authorsAPI.PATCH("/:id", method.UpdateAuthor)
-		authorsAPI.DELETE("/:id", method.DeleteAuthor)		
-	}
-	
-	booksUI := router.Group("/books/ui")
+	booksUI := router.Group("/ui/books")
 	{
 		booksUI.GET("/add-form", method.UIAddBookForm)
 		booksUI.POST("/submit-add-form", method.UISubmitAddBookForm)
@@ -48,15 +39,6 @@ func GetRouter() *gin.Engine {
 		booksUI.POST("/submit-update-form/:isbn_13", method.UISubmitUpdateBookForm)
 		booksUI.GET("/view/:isbn_13", method.UIViewBook)
 		booksUI.GET("/delete/:isbn_13", method.UIDeleteBook)
-	}
-
-	booksAPI := router.Group("/api/books")
-	{
-		booksAPI.GET("/", method.GetBooks)
-		booksAPI.GET("/:isbn_13", method.GetBook)
-		booksAPI.POST("/", method.AddBook)
-		booksAPI.PATCH("/:isbn_13", method.UpdateBook)
-		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
 	}
 
 	publishersUI := router.Group("/ui/publishers")
@@ -68,6 +50,24 @@ func GetRouter() *gin.Engine {
 		publishersUI.POST("/submit-update-form/:id", method.UISubmitUpdatePublisherForm)
 		publishersUI.GET("/view/:id", method.UIViewPublisher)
 		publishersUI.GET("/delete/:id", method.UIDeletePublisher)
+	}
+
+	authorsAPI := router.Group("/api/authors")
+	{
+		authorsAPI.GET("/", method.GetAuthors)
+		authorsAPI.GET("/:id", method.GetAuthor)
+		authorsAPI.POST("/", method.AddAuthor)
+		authorsAPI.PATCH("/:id", method.UpdateAuthor)
+		authorsAPI.DELETE("/:id", method.DeleteAuthor)		
+	}
+
+	booksAPI := router.Group("/api/books")
+	{
+		booksAPI.GET("/", method.GetBooks)
+		booksAPI.GET("/:isbn_13", method.GetBook)
+		booksAPI.POST("/", method.AddBook)
+		booksAPI.PATCH("/:isbn_13", method.UpdateBook)
+		booksAPI.DELETE("/:isbn_13", method.DeleteBook)		
 	}
 
 	publishersAPI := router.Group("/api/publishers")
