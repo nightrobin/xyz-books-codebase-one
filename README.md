@@ -25,6 +25,9 @@
 - Go: 1.21.1
 - MySQL: 8
 
+## CRUD UI URL
+http://localhost:3000
+
 ## API Endpoints Reference
 |AUTHOR|Get All  |
 |--|--|
