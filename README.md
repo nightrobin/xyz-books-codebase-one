@@ -20,21 +20,38 @@
 ## Scope & Limitations
 - As Frontend Frameworks are **not allowed** to be used, HTML Templates were used instead to handle the Client UI for the codebase 1.
 - For the requirement ***"Every specific record page/endpoint should be given its ISBN-13 in the URL path."*** It create an issue if the ISBN-13 is not yet set in a particular book. To properly handle this, viewing of that record is only allowed in the CRUD UI: Books Index and in the API: Books - Get All.
-- The specific fetching and viewing of the book will be allowed, once that book has been set a valid ISBN-13.
-- I used MySQL for this project.
+- The specific fetching and viewing of the book will be allowed once that book has been set a valid ISBN-13.
+- Given the huge datasets, I implemented a pagination for the CRUD UI and API.
+- For database, I use MySQL for this project.
 
 ## Versions used
 - Go: 1.21.1
 - MySQL: 8
 
-## CRUD UI URL
-http://localhost:3000
+## CRUD UI Reference
+**URL:** http://localhost:3000
+
+### CRUD UI Search
+To search in the CRUD UI, use the provided search input.
+
+Take note that it will only consider the following criterias when searching:
+- **Books Page:** Title, ISBN-13, ISBN-10, Author, Publication Year, Publisher Name
+- **Authors Page:** First Name, Middle Name, Last Name
+- **Publisher Page:** Name
 
 ## API Endpoints Reference
 |AUTHOR|Get All  |
 |--|--|
 |URL  |http://localhost:3000/api/authors  |
 |Method  |GET  |
+
+**Query string parameters**
+Example URL: http://localhost:3000/api/authors?keyword=john&limit=10000&page=2
+| Field | Specification | Description |
+|----------|----------|----------|
+| keyword | optional | Keyword for searching. It uses the same criterias like the CRUD UI Author search.  | 
+| limit | optional | Record limit to fetch.  |
+| page | optional | The offset page, only works if the **limit** query string parameter is also defined.  |
 
 **Sample Response**
 
@@ -221,6 +238,14 @@ http://localhost:3000
 |--|--|
 |URL  |http://localhost:3000/api/books  |
 |Method  |GET  |
+
+**Query string parameters**
+Example URL: http://localhost:3000/api/books?keyword=bear&limit=10000&page=2
+| Field | Specification | Description |
+|----------|----------|----------|
+| keyword | optional | Keyword for searching. It uses the same criterias like the CRUD UI Book search.  | 
+| limit | optional | Record limit to fetch.  |
+| page | optional | The offset page, only works if the **limit** query string parameter is also defined.  |
 
 **Sample Response**
 
@@ -449,6 +474,14 @@ http://localhost:3000
 |--|--|
 |URL  |http://localhost:3000/api/publishers  |
 |Method  |GET  |
+
+**Query string parameters**
+Example URL: http://localhost:3000/api/publishers?keyword=bear&limit=10000&page=2
+| Field | Specification | Description |
+|----------|----------|----------|
+| keyword | optional | Keyword for searching. It uses the same criterias like the CRUD UI Publisher search.  | 
+| limit | optional | Record limit to fetch.  |
+| page | optional | The offset page, only works if the **limit** query string parameter is also defined.  |
 
 **Sample Response**
 
