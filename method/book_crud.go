@@ -190,12 +190,28 @@ func UISubmitAddBookForm(c *gin.Context) {
 
 	var countIsbn13 int64
 	if len(book.Isbn13) > 0 {
+		if !IsbnValidator(book.Isbn13) {
+			pageData.Message = "Cannot add the book."
+			pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "The ISBN 13 is invalid."}}
+			RenderPage(c, "/templates/books/result.html", pageData)
+		
+			return
+		}
+		
 		hasIsbn = true
 		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
 	}
 
 	var countIsbn10 int64
 	if len(book.Isbn10) > 0 {
+		if !IsbnValidator(book.Isbn10) {
+			pageData.Message = "Cannot add the book."
+			pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "The ISBN 10 is invalid."}}
+			RenderPage(c, "/templates/books/result.html", pageData)
+		
+			return
+		}
+
 		hasIsbn = true
 
 		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
@@ -225,7 +241,6 @@ func UISubmitAddBookForm(c *gin.Context) {
 		return
 	}
 
-	// TODO Validate ISBN 13 or ISBN 10 first
 	
 	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("books").Create(&book).Error; err != nil {
@@ -318,12 +333,28 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 
 	var countIsbn13 int64
 	if len(book.Isbn13) > 0 {
+		if !IsbnValidator(book.Isbn13) {
+			pageData.Message = "Cannot update the book."
+			pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "The ISBN 13 is invalid."}}
+			RenderPage(c, "/templates/books/result.html", pageData)
+		
+			return
+		}
+
 		hasIsbn = true
 		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
 	}
 
 	var countIsbn10 int64
 	if len(book.Isbn10) > 0 {
+		if !IsbnValidator(book.Isbn10) {
+			pageData.Message = "Cannot update the book."
+			pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "The ISBN 10 is invalid."}}
+			RenderPage(c, "/templates/books/result.html", pageData)
+		
+			return
+		}
+
 		hasIsbn = true
 
 		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
@@ -397,8 +428,6 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 	if existingBook.ListPrice != book.ListPrice {
 		existingBook.ListPrice = book.ListPrice
 	}
-
-	// TODO Validate ISBN 13 or ISBN 10 first
 
 	Db.Transaction(func(tx *gorm.DB) error {
 	
@@ -572,7 +601,14 @@ func GetBooks(c *gin.Context) {
 func GetBook(c *gin.Context) {
 	Isbn13 := c.Param("isbn_13")
 	
-	// TODO Validate ISBN 13 or ISBN 10 first
+	if !IsbnValidator(Isbn13) {
+		response := model.Response[map[string]string]{
+			Message: "The ISBN 13 given is invalid.",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
 	
 	var book apiBookData
 
@@ -631,7 +667,14 @@ func AddBook(c *gin.Context) {
 	var hasIsbn bool = false
 	
 	if len(book.Isbn13) > 0 {
-		// TODO Validate ISBN 13 or ISBN 10 first
+		if !IsbnValidator(book.Isbn13) {
+			response := model.Response[map[string]string]{
+				Message: "The ISBN 13 given is invalid.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
 
 		hasIsbn = true
 		var countIsbn13 int64
@@ -647,7 +690,14 @@ func AddBook(c *gin.Context) {
 	}
 	
 	if len(book.Isbn10) > 0 {
-		// TODO Validate ISBN 13 or ISBN 10 first
+		if !IsbnValidator(book.Isbn10) {
+			response := model.Response[map[string]string]{
+				Message: "The ISBN 10 given is invalid.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
 
 		hasIsbn = true
 		var countIsbn10 int64
@@ -737,7 +787,14 @@ func AddBook(c *gin.Context) {
 func UpdateBook(c *gin.Context) {
 	Isbn13 := c.Param("isbn_13")
 	
-	// TODO Validate ISBN 13 or ISBN 10 first
+	if !IsbnValidator(Isbn13) {
+		response := model.Response[map[string]string]{
+			Message: "The ISBN 13 given is invalid.",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
 
 	var book model.Book
 
@@ -776,7 +833,14 @@ func UpdateBook(c *gin.Context) {
 	var hasIsbn bool = false
 	
 	if len(book.Isbn13) > 0 {
-		// TODO Validate ISBN 13 or ISBN 10 first
+		if !IsbnValidator(book.Isbn13) {
+			response := model.Response[map[string]string]{
+				Message: "The ISBN 13 given is invalid.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
 
 		hasIsbn = true
 		var countIsbn13 int64
@@ -792,7 +856,14 @@ func UpdateBook(c *gin.Context) {
 	}
 	
 	if len(book.Isbn10) > 0 {
-		// TODO Validate ISBN 13 or ISBN 10 first
+		if !IsbnValidator(book.Isbn10) {
+			response := model.Response[map[string]string]{
+				Message: "The ISBN 10 given is invalid.",
+			}
+	
+			c.IndentedJSON(http.StatusBadRequest, response)
+			return
+		}
 
 		hasIsbn = true
 		var countIsbn10 int64
@@ -918,7 +989,14 @@ func UpdateBook(c *gin.Context) {
 func DeleteBook(c *gin.Context) {
 	Isbn13 := c.Param("isbn_13")
 
-	// TODO Validate ISBN 13 or ISBN 10 first
+	if !IsbnValidator(Isbn13) {
+		response := model.Response[map[string]string]{
+			Message: "The ISBN 13 given is invalid.",
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, response)
+		return
+	}
 
 	var book model.Book
 
