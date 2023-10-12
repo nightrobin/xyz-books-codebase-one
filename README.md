@@ -5,10 +5,10 @@
 2. Edit and save the **.env** file that is included in the codebase 1.
 	- Input the correct database credentials in the DB fields.
 	- Input the correct API Host and API Port (default is recommended).
-2. Go to the project directory via terminal.
-3. Run `go get`
-3. Run `go build` 
-4. After a successful build, you may run the `main` executable.
+3. Go to the project directory via terminal.
+4. Run `go get`
+5. Run `go build` 
+6. After a successful build, you may run the `main` executable.
 
 ## Scope & Limitations
 - As Frontend Frameworks are **not allowed** to be used, HTML Templates were used instead to handle the Client UI for the codebase 1.
