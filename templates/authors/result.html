@@ -16,25 +16,34 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-4 mx-auto">
-                    {{ if .HasError }}
-                    <div class="alert alert-danger" role="alert">
-                        {{ .Message }}
+                <div class="col-4 mx-auto text-center">
+                    {{ if .Errors }}
+                    <div class="card text-white bg-danger mb-3">
+                        <div class="card-header">{{ .Message }}</div>
+                        <div class="card-body">
+                            {{ range $error := .Errors }}
+                            <div>
+                                {{ $error.Param }}: {{ $error.Message }}
+                            </div>  
+                            {{ end }}
+                        </div>
                     </div>
                     {{ else }}
-                        <div class="alert alert-success" role="alert">
+                    <div class="card text-white bg-success mb-3">
+                        <div class="card-body">
                             {{ .Message }}
                         </div>
+                    </div>
                     {{ end }}
                 </div>
             </div>
+            {{ if .Errors }}
             <div class="row">
                 <div class="col-4 mx-auto text-center">
-                    {{ if .HasError }}
-                        <button type="button" class="btn btn-primary" onclick="history.back()">Go back</button>
-                    {{ end }}
+                    <button type="button" class="btn btn-primary" onclick="history.back()">Go back</button>
                 </div>
-            </div>            
+            </div>
+            {{ end }} 
         </div>
     </body>
 </html>

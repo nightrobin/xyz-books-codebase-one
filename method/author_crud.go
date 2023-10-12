@@ -13,15 +13,9 @@ import(
 	"xyz-books/model"
 	
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
-type authorForm struct {
-    FirstName string `form:"first-name"`
-    MiddleName string `form:"middle-name"`
-    LastName string `form:"last-name"`
-}
 
 func UIAuthorIndex(c *gin.Context) {
 
@@ -138,25 +132,25 @@ func UIAuthorIndex(c *gin.Context) {
 
 func UIAddAuthorForm(c *gin.Context) {
 	c.File(ExPath + "/templates/authors/add_form.html")
-
 	return
 }
 
 func UISubmitAddAuthorForm(c *gin.Context) {
-	var authorForm authorForm
-	c.ShouldBind(&authorForm)
+	var author model.Author
+	c.ShouldBind(&author)
+	
+	var pageData model.PageData
+	
+	pageData.Errors = FieldValidator(author)
 
-	type PageData struct {
-		Message string
-		HasError bool
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot add the Author."
+		RenderPage(c, "/templates/authors/result.html", pageData)
+		return
 	}
 
-	var pageData PageData
-	pageData.Message = "Successfully added an Author" 
-	pageData.HasError = false
-
 	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Table("authors").Create(&authorForm).Error; err != nil {
+		if err := tx.Table("authors").Create(&author).Error; err != nil {
 			return err
 		}
 
@@ -164,23 +158,16 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot add an Author." 
-		pageData.HasError = true
+		pageData.Message = "Cannot add the Author." 
+		RenderPage(c, "/templates/authors/result.html", pageData)
+		return
 	}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pageData.Message = "Successfully added an Author" 
 
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
+	RenderPage(c, "/templates/authors/result.html", pageData)
+	
 	return
 }
 
@@ -190,20 +177,7 @@ func UIUpdateAuthorForm(c *gin.Context) {
 	var author model.Author
 	Db.Where("id = ?", ID).First(&author)
 
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/update_form.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, author); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/authors/update_form.html", author)
 
 	return
 }
@@ -211,27 +185,36 @@ func UIUpdateAuthorForm(c *gin.Context) {
 func UISubmitUpdateAuthorForm(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var author model.Author
 	c.ShouldBind(&author)
+
+	pageData.Errors = FieldValidator(author)
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot update the Author."
+
+		RenderPage(c, "/templates/authors/result.html", pageData)
+
+		return
+	}
 
 	var existingAuthor model.Author
 	Db.Where("id = ?", ID).First(&existingAuthor)
 
-	existingAuthor.FirstName = author.FirstName
-	existingAuthor.MiddleName = author.MiddleName
-	existingAuthor.LastName = author.LastName
-
-	type PageData struct {
-		Message string
-		HasError bool
+	if existingAuthor.FirstName != author.FirstName {
+		existingAuthor.FirstName = author.FirstName
+	}
+	
+	if existingAuthor.MiddleName != author.MiddleName {
+		existingAuthor.MiddleName = author.MiddleName
+	}
+	
+	if existingAuthor.LastName != author.LastName {
+		existingAuthor.LastName = author.LastName
 	}
 
-	var pageData PageData
-	pageData.Message = "Successfully updated Author"
-	pageData.HasError = false
-
-	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-	
+	Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(&existingAuthor).Error; err != nil {
 			return err
 		}
@@ -239,23 +222,9 @@ func UISubmitUpdateAuthorForm(c *gin.Context) {
 		return nil
 	})
 
-	if transactionErr != nil {
-		pageData.Message = "Cannot update Author." 
-		pageData.HasError = true
-	}
+	pageData.Message = "Successfully updated the Author"
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/authors/result.html", pageData)
 
 	return
 }
@@ -263,24 +232,23 @@ func UISubmitUpdateAuthorForm(c *gin.Context) {
 func UIViewAuthor(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var author model.Author
-
-	Db.Where("id = ?", ID).First(&author)
-
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/view_one.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
+	c.ShouldBind(&author)
 	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	result := Db.Where("id = ?", ID).First(&author)
 
-	if err := tmpl.Execute(w, author); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "This Author does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ID", Message: "Invalid ID given."}}
+
+		RenderPage(c, "/templates/authors/result.html", pageData)
+
+		return
 	}
+
+	RenderPage(c, "/templates/authors/view_one.html", author)
 
 	return
 }
@@ -288,38 +256,23 @@ func UIViewAuthor(c *gin.Context) {
 func UIDeleteAuthor(c *gin.Context) {
 	ID := c.Param("id")
 
+	var pageData model.PageData
+
 	var author model.Author
-	result := Db.Where("id = ?", ID).First(&author)
+	c.ShouldBind(&author)
 	
-	type PageData struct {
-		Message string
-		HasError bool
-	}
+	result := Db.Where("id = ?", ID).First(&author)
 
-	var pageData PageData
-	pageData.Message = "Successfully deleted Author" 
-	pageData.HasError = false
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "This Author does not exist."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ID", Message: "Invalid ID given."}}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/authors/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+		RenderPage(c, "/templates/authors/result.html", pageData)
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if result.Error == gorm.ErrRecordNotFound {
-		pageData.Message = "Author not found." 
-		pageData.HasError = true
-		if err := tmpl.Execute(w, pageData); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
 		return
 	}
 
 	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-	
 		if err := tx.Table("authors").Where("id = ?", author.ID).Unscoped().Delete(&model.Author{}).Error; err != nil {
 			return err
 		}
@@ -328,13 +281,16 @@ func UIDeleteAuthor(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot delete this Author because it is currently used in a book." 
-		pageData.HasError = true
+		pageData.Message = "Deletion failed"
+		pageData.Errors =  []model.ApiError{model.ApiError{Param: "Author", Message: "Cannot delete this Author because it is currently used in a book."}}
+		RenderPage(c, "/templates/authors/result.html", pageData)
+
+		return
 	}
 
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	pageData.Message = "Successfully deleted Author."
+
+	RenderPage(c, "/templates/authors/result.html", pageData)
 
 	return
 }
@@ -376,7 +332,7 @@ func GetAuthors(c *gin.Context) {
 
 		if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 			response := model.Response[map[string]string]{
-				Message: "No Authors yet / Authors not found",
+				Message: "No Authors yet / Authors not found with the given keyword.",
 			}
 
 			c.IndentedJSON(http.StatusBadRequest, response)
@@ -390,7 +346,7 @@ func GetAuthors(c *gin.Context) {
 		data["authors"] = authorDataJsonStr
 
 		response := model.Response[map[string]string]{
-			Message: "Successfully retrieved authors",
+			Message: "Successfully retrieved the authors.",
 			Count: result.RowsAffected,
 			Page: int64(page),
 			Data:    data,
@@ -415,7 +371,7 @@ func GetAuthor(c *gin.Context) {
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Author not found",
+			Message: "Author not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -429,7 +385,7 @@ func GetAuthor(c *gin.Context) {
 	data["author"] = authorDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully retrieved author",
+		Message: "Successfully retrieved the author.",
 		Count: result.RowsAffected,
 		Page: int64(1),
 		Data:	data,
@@ -442,22 +398,15 @@ func GetAuthor(c *gin.Context) {
 
 func AddAuthor(c *gin.Context) {
 	var author model.Author
+	c.ShouldBind(&author)
 
-	if err := c.BindJSON(&author); err != nil {
-		return
-	}
-
-	err := Validate.Struct(author)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
-
+	var errors []model.ApiError
+	errors = FieldValidator(author)
+	if errors != nil {
 		response := model.Response[map[string]string]{
 			Message: "Field Errors",
-			Data:    errors,
 		}
+		response.Errors = errors
 
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
@@ -478,7 +427,7 @@ func AddAuthor(c *gin.Context) {
 	data["author"] = authorDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully added an Author",
+		Message: "Successfully added the Author",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
@@ -492,8 +441,8 @@ func AddAuthor(c *gin.Context) {
 func UpdateAuthor(c *gin.Context) {
 	ID := c.Param("id")
 
-	var author model.Author
-	c.ShouldBind(&author)
+	var newAuthor model.Author
+	c.ShouldBind(&newAuthor)
 
 	var existingAuthor model.Author
 	result := Db.Where("id = ?", ID).First(&existingAuthor)
@@ -507,36 +456,31 @@ func UpdateAuthor(c *gin.Context) {
 		return
 	}
 
-	err := Validate.Struct(author)
-	if err != nil {
-		errors := make(map[string]string)
-		for _, err := range err.(validator.ValidationErrors) {
-			errors[err.StructField()] = err.Tag()
-		}
+	if existingAuthor.FirstName != newAuthor.FirstName {
+		existingAuthor.FirstName = newAuthor.FirstName
+	}
+	
+	if existingAuthor.MiddleName != newAuthor.MiddleName {
+		existingAuthor.MiddleName = newAuthor.MiddleName
+	}
+	
+	if existingAuthor.LastName != newAuthor.LastName {
+		existingAuthor.LastName = newAuthor.LastName
+	}
 
+	var errors []model.ApiError
+	errors = FieldValidator(existingAuthor)
+	if errors != nil {
 		response := model.Response[map[string]string]{
 			Message: "Field Errors",
-			Data:    errors,
 		}
+		response.Errors = errors
 
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
 	}
 
-	if existingAuthor.FirstName != author.FirstName {
-		existingAuthor.FirstName = author.FirstName
-	}
-	
-	if existingAuthor.MiddleName != author.MiddleName {
-		existingAuthor.MiddleName = author.MiddleName
-	}
-	
-	if existingAuthor.LastName != author.LastName {
-		existingAuthor.LastName = author.LastName
-	}
-	
 	Db.Transaction(func(tx *gorm.DB) error {
-	
 		if err := tx.Save(&existingAuthor).Error; err != nil {
 			return err
 		}
@@ -556,6 +500,7 @@ func UpdateAuthor(c *gin.Context) {
 		Page: int64(1),
 		Data:	data,
 	}
+	
 	c.IndentedJSON(http.StatusOK, response)
 
 	return
@@ -570,7 +515,7 @@ func DeleteAuthor(c *gin.Context) {
 
 	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
 		response := model.Response[map[string]string]{
-			Message: "Author not found",
+			Message: "Author not found with the given ID.",
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, response)
@@ -589,7 +534,7 @@ func DeleteAuthor(c *gin.Context) {
 		}
 
 		response := model.Response[map[string]string]{
-			Message: "Successfully deleted author",
+			Message: "Successfully deleted the author",
 			Count: result.RowsAffected,
 			Page: int64(1),
 		}
@@ -598,7 +543,6 @@ func DeleteAuthor(c *gin.Context) {
 	
 		return nil
 	})
-	
 	
 	return
 }

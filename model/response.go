@@ -5,7 +5,7 @@ import (
 )
 
 type CustomData interface {
-	constraints.Ordered | map[string]string | []Author
+	constraints.Ordered | map[string]string | []Author | []ApiError
 }
 
 type Response[T CustomData] struct {
@@ -13,4 +13,5 @@ type Response[T CustomData] struct {
 	Count	int64	`json:"count"`
 	Page	int64	`json:"page"`
 	Data	T		`json:"data"`
+	Errors	[]ApiError	`json:"errors"`	
 }
