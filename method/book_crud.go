@@ -602,22 +602,15 @@ func GetBook(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
 	}
-	
-	bookDataJson, _ := json.Marshal(book)
-	bookDataJsonStr := string(bookDataJson)
 
-	data := make(map[string]string)
-	data["book"] = bookDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.ApiBookData]{
 		Message: "Successfully retrieved the book.",
 		Count: result.RowsAffected,
 		Page: int64(1),
-		Data:	data,
+		Data:    book,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
-	
 	return
 }
 
@@ -705,17 +698,11 @@ func AddBook(c *gin.Context) {
 		return nil
 	})
 
-	bookDataJson, _ := json.Marshal(book)
-	bookDataJsonStr := string(bookDataJson)
-
-	data := make(map[string]string)
-	data["book"] = bookDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Book]{
 		Message: "Successfully added the book.",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	book,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
@@ -862,17 +849,11 @@ func UpdateBook(c *gin.Context) {
 		return nil
 	})
 
-	bookDataJson, _ := json.Marshal(book)
-	bookDataJsonStr := string(bookDataJson)
-
-	data := make(map[string]string)
-	data["book"] = bookDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Book]{
 		Message: "Successfully updated the book.",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	existingBook,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)

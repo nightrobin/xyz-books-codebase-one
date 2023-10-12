@@ -1,7 +1,6 @@
 package method
 
 import(
-	"encoding/json"
 	"net/http"
 	"strings"
 	"strconv"
@@ -323,18 +322,12 @@ func GetAuthors(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, response)
 			return
 		}
-		
-		authorDataJson, _ := json.Marshal(authors)
-		authorDataJsonStr := string(authorDataJson)
 
-		data := make(map[string]string)
-		data["authors"] = authorDataJsonStr
-
-		response := model.Response[map[string]string]{
+		response := model.Response[[]model.Author]{
 			Message: "Successfully retrieved the authors.",
 			Count: result.RowsAffected,
 			Page: int64(page),
-			Data:    data,
+			Data:    authors,
 		}
 
 		c.IndentedJSON(http.StatusOK, response)
@@ -363,17 +356,11 @@ func GetAuthor(c *gin.Context) {
 		return
 	}
 	
-	authorDataJson, _ := json.Marshal(author)
-	authorDataJsonStr := string(authorDataJson)
-
-	data := make(map[string]string)
-	data["author"] = authorDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Author]{
 		Message: "Successfully retrieved the author.",
 		Count: result.RowsAffected,
 		Page: int64(1),
-		Data:	data,
+		Data:	author,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
@@ -404,18 +391,12 @@ func AddAuthor(c *gin.Context) {
 
 		return nil
 	})
-
-	authorDataJson, _ := json.Marshal(author)
-	authorDataJsonStr := string(authorDataJson)
-
-	data := make(map[string]string)
-	data["author"] = authorDataJsonStr
-
-	response := model.Response[map[string]string]{
+	
+	response := model.Response[model.Author]{
 		Message: "Successfully added the Author",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	author,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
@@ -473,17 +454,11 @@ func UpdateAuthor(c *gin.Context) {
 		return nil
 	})
 
-	authorDataJson, _ := json.Marshal(existingAuthor)
-	authorDataJsonStr := string(authorDataJson)
-
-	data := make(map[string]string)
-	data["author"] = authorDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Author]{
 		Message: "Successfully updated the author.",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	existingAuthor,
 	}
 	
 	c.IndentedJSON(http.StatusOK, response)

@@ -1,7 +1,6 @@
 package method
 
 import(
-	"encoding/json"
 	"net/http"
 	"strings"
 	"strconv"
@@ -311,17 +310,11 @@ func GetPublishers(c *gin.Context) {
 			return
 		}
 		
-		publisherDataJson, _ := json.Marshal(publishers)
-		publisherDataJsonStr := string(publisherDataJson)
-
-		data := make(map[string]string)
-		data["publishers"] = publisherDataJsonStr
-
-		response := model.Response[map[string]string]{
+		response := model.Response[[]model.Publisher]{
 			Message: "Successfully retrieved the publishers.",
 			Count: result.RowsAffected,
 			Page: int64(page),
-			Data:    data,
+			Data:    publishers,
 		}
 
 		c.IndentedJSON(http.StatusOK, response)
@@ -349,18 +342,12 @@ func GetPublisher(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, response)
 		return
 	}
-	
-	publisherDataJson, _ := json.Marshal(publisher)
-	publisherDataJsonStr := string(publisherDataJson)
 
-	data := make(map[string]string)
-	data["publisher"] = publisherDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Publisher]{
 		Message: "Successfully retrieved the publisher.",
 		Count: result.RowsAffected,
 		Page: int64(1),
-		Data:	data,
+		Data:	publisher,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
@@ -392,17 +379,11 @@ func AddPublisher(c *gin.Context) {
 		return nil
 	})
 
-	publisherDataJson, _ := json.Marshal(publisher)
-	publisherDataJsonStr := string(publisherDataJson)
-
-	data := make(map[string]string)
-	data["publisher"] = publisherDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Publisher]{
 		Message: "Successfully added the publisher.",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	publisher,
 	}
 
 	c.IndentedJSON(http.StatusOK, response)
@@ -452,17 +433,11 @@ func UpdatePublisher(c *gin.Context) {
 		return nil
 	})
 
-	publisherDataJson, _ := json.Marshal(existingPublisher)
-	publisherDataJsonStr := string(publisherDataJson)
-
-	data := make(map[string]string)
-	data["publisher"] = publisherDataJsonStr
-
-	response := model.Response[map[string]string]{
+	response := model.Response[model.Publisher]{
 		Message: "Successfully updated the publisher",
 		Count: 1,
 		Page: int64(1),
-		Data:	data,
+		Data:	existingPublisher,
 	}
 	
 	c.IndentedJSON(http.StatusOK, response)

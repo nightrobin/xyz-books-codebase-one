@@ -5,7 +5,7 @@ import (
 )
 
 type CustomData interface {
-	constraints.Ordered | map[string]string | []Author | []ApiError | []ApiBookData
+	constraints.Ordered | map[string]string | []ApiError | []ApiBookData | ApiBookData | []Author | Author | []Book | Book | []Publisher | Publisher
 }
 
 type Response[T CustomData] struct {
