@@ -791,7 +791,7 @@ func UpdateBook(c *gin.Context) {
 	
 	if len(book.Isbn10) > 0 {
 		if !IsbnValidator(book.Isbn10) {
-			errors = append(errors, model.ApiError{Param:"Isbn13", Message: "Invalid ISBN 13"})
+			errors = append(errors, model.ApiError{Param:"Isbn10", Message: "Invalid ISBN 10"})
 		}
 
 		hasIsbn = true
