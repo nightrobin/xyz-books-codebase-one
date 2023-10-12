@@ -794,6 +794,7 @@ func UpdateBook(c *gin.Context) {
 
 		existingBook.AuthorIDs = book.AuthorIDs
 	}
+
 	
 	if existingBook.Title != book.Title && len(book.Title) > 0 {
 		existingBook.Title = book.Title
