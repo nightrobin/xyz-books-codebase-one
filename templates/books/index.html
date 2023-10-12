@@ -20,7 +20,7 @@
                                     <a class="btn btn-success" href="/" role="button">Show all books</a>
                                 </div>
                                 <div class="col-2">
-                                    <a class="btn btn-primary" href="/books/ui/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Add a book</a>
+                                    <a class="btn btn-primary" href="/ui/books/add-form" role="button"><i class="bi bi-plus-circle-fill"></i>&ensp;Add a book</a>
                                 </div>
                                 <div class="col-1">
                                     <a class="btn btn-warning" href="/ui/authors" role="button">Authors</a>
@@ -64,11 +64,11 @@
                             <tr>
                             <td>{{$book.ID}}</td>
                             <td>
-                                <a href="/books/ui/view/{{$book.Isbn13}}"><i class="bi bi-eye-fill"></i></a>
+                                <a href="/ui/books/view/{{$book.Isbn13}}"><i class="bi bi-eye-fill"></i></a>
                                 &nbsp;
-                                <a href="/books/ui/update-form/{{$book.Isbn13}}"><i class="bi bi-pencil-fill"></a></i>
+                                <a href="/ui/books/update-form/{{$book.Isbn13}}"><i class="bi bi-pencil-fill"></a></i>
                                 &nbsp;
-                                <a href="/books/ui/delete/{{$book.Isbn13}}"><i class="bi bi-trash-fill"></a></i>
+                                <a href="/ui/books/delete/{{$book.Isbn13}}"><i class="bi bi-trash-fill"></a></i>
                             </td>
                             <td>{{$book.Title}}</td>
                             <td>{{$book.Author}}</td>

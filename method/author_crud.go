@@ -164,7 +164,7 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 	}
 
 
-	pageData.Message = "Successfully added an Author" 
+	pageData.Message = "Successfully added the Author" 
 
 	RenderPage(c, "/templates/authors/result.html", pageData)
 	

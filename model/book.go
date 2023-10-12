@@ -1,14 +1,14 @@
 package model
 
 type Book struct {
-	ID				uint64		`gorm:"primaryKey"`
-	Title			string		`form:"title" json:"title"`
-	Isbn13			string		`form:"isbn-13" gorm:"column:isbn_13" json:"isbn_13"`
-	Isbn10			string		`form:"isbn-10" gorm:"column:isbn_10" json:"isbn_10"`
-	PublicationYear	int16 		`form:"publication-year" json:"publication_year"`
-	PublisherID		uint64		`form:"publisher-id" json:"publisher_id"`
-	ImageURL		string		`form:"image-url" json:"image_url"`
-	Edition			string		`form:"edition" json:"edition"`
-	ListPrice		float32		`form:"list-price" json:"list_price"`
-	AuthorIDs		[]uint64	`gorm:"-" json:"author_ids" validate:"required"`
+	ID				uint64		`gorm:"primaryKey" json:"ID"`
+	Title			string		`form:"Title" json:"Title" validate:"required"`
+	Isbn13			string		`form:"Isbn13" gorm:"column:isbn_13" json:"Isbn13"`
+	Isbn10			string		`form:"Isbn10" gorm:"column:isbn_10" json:"Isbn10"`
+	PublicationYear	int16 		`form:"PublicationYear" json:"PublicationYear" validate:"required"`
+	PublisherID		uint64		`form:"PublisherID" json:"PublisherID" validate:"required"`
+	ImageURL		string		`form:"ImageURL" json:"ImageURL"`
+	Edition			string		`form:"Edition" json:"Edition"`
+	ListPrice		float32		`form:"ListPrice" json:"ListPrice" validate:"required"`
+	AuthorIDs		[]uint64	`gorm:"-" json:"AuthorIDs" validate:"required"`
 }

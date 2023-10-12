@@ -161,8 +161,7 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 		return
 	}
 
-
-	pageData.Message = "Successfully added an Publisher" 
+	pageData.Message = "Successfully added the Publisher" 
 
 	RenderPage(c, "/templates/publishers/result.html", pageData)
 	

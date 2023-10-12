@@ -33,6 +33,7 @@ func GetRouter() *gin.Engine {
 
 	booksUI := router.Group("/ui/books")
 	{
+		booksUI.GET("/", method.UIBookIndex)
 		booksUI.GET("/add-form", method.UIAddBookForm)
 		booksUI.POST("/submit-add-form", method.UISubmitAddBookForm)
 		booksUI.GET("/update-form/:isbn_13", method.UIUpdateBookForm)

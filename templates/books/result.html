@@ -12,29 +12,38 @@
             <hr/>
             <div class="row">
                 <div class="col-12">
-                    <a class="btn btn-success" href="/" role="button">Go to books</a>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-4 mx-auto">
-                    {{ if .HasError }}
-                    <div class="alert alert-danger" role="alert">
-                        {{ .Message }}
-                    </div>
-                    {{ else }}
-                        <div class="alert alert-success" role="alert">
-                            {{ .Message }}
-                        </div>
-                    {{ end }}
+                    <a class="btn btn-success" href="/ui/books" role="button">Go to books</a>
                 </div>
             </div>
             <div class="row">
                 <div class="col-4 mx-auto text-center">
-                    {{ if .HasError }}
-                        <button type="button" class="btn btn-primary" onclick="history.back()">Go back</button>
+                    {{ if .Errors }}
+                    <div class="card text-white bg-danger mb-3">
+                        <div class="card-header">{{ .Message }}</div>
+                        <div class="card-body">
+                            {{ range $error := .Errors }}
+                            <div>
+                                {{ $error.Param }}: {{ $error.Message }}
+                            </div>  
+                            {{ end }}
+                        </div>
+                    </div>
+                    {{ else }}
+                    <div class="card text-white bg-success mb-3">
+                        <div class="card-body">
+                            {{ .Message }}
+                        </div>
+                    </div>
                     {{ end }}
                 </div>
-            </div>            
+            </div>
+            {{ if .Errors }}
+            <div class="row">
+                <div class="col-4 mx-auto text-center">
+                    <button type="button" class="btn btn-primary" onclick="history.back()">Go back</button>
+                </div>
+            </div>
+            {{ end }} 
         </div>
     </body>
 </html>

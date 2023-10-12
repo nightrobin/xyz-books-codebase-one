@@ -23,19 +23,19 @@
                         <div class="card-body">
                             <div class="card-text">
                                 <div class="table-responsive">
-                                    <form action="/books/ui/submit-update-form/{{.Book.Isbn13}}" method="POST">
+                                    <form action="/ui/books/submit-update-form/{{.Book.Isbn13}}" method="POST">
                                         <table class="table table-borderless">
                                             <tbody>
                                                 <tr>
                                                     <td><b>Title<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="title" name="title" value="{{.Book.Title}}" required maxlength="255">
+                                                        <input type="text" class="form-control" name="Title" value="{{.Book.Title}}" required maxlength="255">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>Author<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <select class="form-select" multiple aria-label="multiple select" name="author-ids[]" aria-describedby="authorHelp" required>
+                                                        <select class="form-select" multiple aria-label="multiple select" name="AuthorIDs[]" aria-describedby="authorHelp" required>
                                                             {{ range $author := .Authors }}
                                                                 {{ if $author.IsSelected}}
                                                                     <option value="{{$author.ID}}" selected>{{$author.FirstName}} {{$author.MiddleName}} {{$author.LastName}}</option>
@@ -53,25 +53,25 @@
                                                 <tr>
                                                     <td><b>ISBN 13</b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="isbn-13" name="isbn-13" value="{{.Book.Isbn13}}" readonly disabled minlength="13" maxlength="13">
+                                                        <input type="text" class="form-control" name="Isbn13" value="{{.Book.Isbn13}}" required minlength="13" maxlength="13">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>ISBN 10</b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="isbn-10" name="isbn-10" value="{{.Book.Isbn10}}" readonly disabled minlength="10" maxlength="10">
+                                                        <input type="text" class="form-control" name="Isbn10" value="{{.Book.Isbn10}}" minlength="10" maxlength="10">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>Publication Year<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="publication-year" name="publication-year" value="{{.Book.PublicationYear}}" required maxlength="4">
+                                                        <input type="text" class="form-control" name="PublicationYear" value="{{.Book.PublicationYear}}" required maxlength="4">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>Publisher Name<span style="color: red;">*</span></b></td>
                                                     <td>
-                                                        <select class="form-select" aria-label="select" name="publisher-id" aria-describedby="publisherHelp" required>
+                                                        <select class="form-select" aria-label="select" name="PublisherID" aria-describedby="publisherHelp" required>
                                                             {{ range $publisher := .Publishers }}
                                                                 {{ if eq $publisher.ID $.Book.PublisherID }}
                                                                     <option value="{{$publisher.ID}}" selected>{{$publisher.Name}}</option>
@@ -89,19 +89,19 @@
                                                 <tr>
                                                     <td><b>Edition</td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="edition" name="edition"  value="{{.Book.Edition}}" maxlength="255">
+                                                        <input type="text" class="form-control" name="Edition" value="{{.Book.Edition}}" maxlength="255">
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>List Price<span style="color: red;">*</span></td>
                                                     <td>
-                                                        <input type="number" class="form-control" id="list-price" name="list-price" value="{{.Book.ListPrice}}" step=".01" required>
+                                                        <input type="number" class="form-control" name="ListPrice" value="{{.Book.ListPrice}}" step=".01" required>
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td><b>Image URL</td>
                                                     <td>
-                                                        <input type="text" class="form-control" id="image-url" name="image-url"  value="{{.Book.ImageURL}}" maxlength="255">
+                                                        <input type="text" class="form-control" name="ImageURL"  value="{{.Book.ImageURL}}" maxlength="255">
                                                     </td>
                                                 </tr>
                                             </tbody>

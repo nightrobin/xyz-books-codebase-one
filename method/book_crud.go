@@ -18,7 +18,7 @@ import(
 	"gorm.io/gorm"
 )
 
-type BookDisplay struct {
+type DisplayBook struct {
 	ID				uint64
 	Title			string
 	Author			string
@@ -31,12 +31,8 @@ type BookDisplay struct {
 	ImageURL		string
 }
 
-type AuthorDisplay struct {
-	ID			uint64 `gorm:"primaryKey"`
-	FirstName	string
-	MiddleName	string
-	LastName	string
-	IsSelected  bool
+type authorIDs struct {
+	AuthorIDs []uint64 `form:"AuthorIDs[]"`
 }
 
 func UIBookIndex(c *gin.Context) {
@@ -58,7 +54,7 @@ func UIBookIndex(c *gin.Context) {
 	go func () {
 		defer wg.Done()
 		
-		var books []BookDisplay
+		var books []DisplayBook
 		var count int64
 		
 		if (len(keyword) != 0){
@@ -78,10 +74,9 @@ func UIBookIndex(c *gin.Context) {
 			Db.Table("books b").Select("Count(*) count", "b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Group("b.id").Count(&count)
 		}
 
-
 		type PageData struct {
 			Keyword string
-			Books []BookDisplay
+			Books []DisplayBook
 			PageNumbers []int64
 			CountShownPageNumber int64
 			CurrentPage int64
@@ -133,21 +128,7 @@ func UIBookIndex(c *gin.Context) {
 			data.IsNextEnabled = false
 		}
 
-		w := c.Writer
-
-		parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/index.html")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpl := template.Must(parsedIndexTemplate, err)
-		
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
+		RenderPage(c, "/templates/books/index.html", data)
 	}()
 	
 	wg.Wait()
@@ -172,20 +153,7 @@ func UIAddBookForm(c *gin.Context) {
 	data.Authors = authors
 	data.Publishers = publishers
 	
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/add_form.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/books/add_form.html", data)
 
 	return
 }
@@ -194,74 +162,90 @@ func UISubmitAddBookForm(c *gin.Context) {
 	var book model.Book
 	c.ShouldBind(&book)
 
-	type authorIDs struct {
-		AuthorIDs []uint64 `form:"author-ids[]"`
-	}
-
 	var bookAuthorIDs authorIDs
 	c.ShouldBind(&bookAuthorIDs)
 
-	type PageData struct {
-		Message string
-		HasError bool
+	book.AuthorIDs = bookAuthorIDs.AuthorIDs
+
+	var pageData model.PageData
+	
+	pageData.Errors = FieldValidator(book)
+
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot add the Book."
+		RenderPage(c, "/templates/books/result.html", pageData)
+		return
 	}
 
-	var pageData PageData
-	pageData.Message = "Successfully added a Book"
-	pageData.HasError = false
+	var hasIsbn bool = false
 
 	var countIsbn13 int64
-	Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
-	if countIsbn13 > 0 {
-		pageData.Message = "Cannot add a book. Duplicate ISBN 13"
-		pageData.HasError = true
+	if len(book.Isbn13) > 0 {
+		hasIsbn = true
+		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+	}
+
+	var countIsbn10 int64
+	if len(book.Isbn10) > 0 {
+		hasIsbn = true
+
+		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+	}
+
+	if !hasIsbn {
+		pageData.Message = "Cannot add the Book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "Atleast ISBN 10 or ISBN 13 must be inputted."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
 	}
 	
-	var countIsbn10 int64
-	Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
-	if countIsbn10 > 0 {
-		pageData.Message = "Cannot add a book. Duplicate ISBN 10"
-		pageData.HasError = true
+	if countIsbn13 > 0 {
+		pageData.Message = "Cannot add the book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "Isbn13", Message: "ISBN 13 has already been used in other book."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
 	}
 
-	if !pageData.HasError {
-		transactionErr := Db.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Table("books").Create(&book).Error; err != nil {
+	if countIsbn10 > 0 {
+		pageData.Message = "Cannot add the book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "Isbn10", Message: "ISBN 10 has already been used in other book."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+
+	// TODO Validate ISBN 13 or ISBN 10 first
+	
+	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("books").Create(&book).Error; err != nil {
+			return err
+		}
+
+		for _, v := range book.AuthorIDs {
+			var bookAuthor model.BookAuthor
+			bookAuthor.BookID = book.ID
+			bookAuthor.AuthorID = v
+
+			if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
 				return err
 			}
-
-			for _, v := range bookAuthorIDs.AuthorIDs {
-				var bookAuthor model.BookAuthor
-				bookAuthor.BookID = book.ID
-				bookAuthor.AuthorID = v
-
-				if err := tx.Table("book_authors").Create(&bookAuthor).Error; err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-
-		if transactionErr != nil {
-			pageData.Message = "Cannot add a Book." 
-			pageData.HasError = true
 		}
+
+		return nil
+	})
+	
+	if transactionErr != nil {
+		pageData.Message = "Cannot add the Book." 
+		RenderPage(c, "/templates/books/result.html", pageData)
+		return
 	}
 
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+	pageData.Message = "Successfully added the Book" 
 
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
+	RenderPage(c, "/templates/books/result.html", pageData)
+	
 	return
 }
 
@@ -274,7 +258,7 @@ func UIUpdateBookForm(c *gin.Context) {
 	var bookAuthors []model.BookAuthor
 	Db.Where("book_id = ?", book.ID).Find(&bookAuthors)
 
-	var authors []AuthorDisplay
+	var authors []model.Author
 	Db.Table("authors").Find(&authors)
 
 	var publishers []model.Publisher
@@ -282,7 +266,7 @@ func UIUpdateBookForm(c *gin.Context) {
 
 	type PageData struct {
 		Book model.Book
-		Authors []AuthorDisplay
+		Authors []model.Author
 		Publishers []model.Publisher
 	}
 
@@ -295,57 +279,119 @@ func UIUpdateBookForm(c *gin.Context) {
 		data.Authors[i].IsSelected = checkIfIDIsInExistingAuthorIDs(v.ID, bookAuthors)
     }
 	
-	w := c.Writer
-
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/update_form.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RenderPage(c, "/templates/books/update_form.html", data)
 
 	return
 }
 
 func UISubmitUpdateBookForm(c *gin.Context) {
-	isbn_13 := c.Param("isbn_13")
+	Isbn13 := c.Param("isbn_13")
 
 	var book model.Book
 	c.ShouldBind(&book)
 
-	type authorIDs struct {
-		AuthorIDs []uint64 `form:"author-ids[]"`
-	}
-
 	var bookAuthorIDs authorIDs
 	c.ShouldBind(&bookAuthorIDs)
+
+	book.AuthorIDs = bookAuthorIDs.AuthorIDs
 	
-	var existingBook model.Book
-	Db.Where("isbn_13 = ?", isbn_13).First(&existingBook)
+	var pageData model.PageData
+		
+	pageData.Errors = FieldValidator(book)
 
-	existingBook.Title = book.Title
-	existingBook.PublicationYear = book.PublicationYear
-	existingBook.PublisherID = book.PublisherID
-	existingBook.ImageURL = book.ImageURL
-	existingBook.Edition = book.Edition
-	existingBook.ListPrice = book.ListPrice
-
-	type PageData struct {
-		Message string
-		HasError bool
+	if len(pageData.Errors) > 0 {
+		pageData.Message = "Cannot update the Book."
+		RenderPage(c, "/templates/books/result.html", pageData)
+		return
 	}
 
-	var pageData PageData
-	pageData.Message = "Successfully updated Book"
-	pageData.HasError = false
+	var hasIsbn bool = false
 
-	transactionErr := Db.Transaction(func(tx *gorm.DB) error {
+	var countIsbn13 int64
+	if len(book.Isbn13) > 0 {
+		hasIsbn = true
+		Db.Table("books").Where("isbn_13 = ?", book.Isbn13).Count(&countIsbn13)
+	}
+
+	var countIsbn10 int64
+	if len(book.Isbn10) > 0 {
+		hasIsbn = true
+
+		Db.Table("books").Where("isbn_10 = ?", book.Isbn10).Count(&countIsbn10)
+	}
+
+	if !hasIsbn {
+		pageData.Message = "Cannot update the Book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN", Message: "Atleast ISBN 10 or ISBN 13 must be inputted."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+	
+	if countIsbn13 > 0 {
+		pageData.Message = "Cannot update the book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "Isbn13", Message: "ISBN 13 has already been used in other book."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+
+	if countIsbn10 > 0 {
+		pageData.Message = "Cannot update the book."
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "Isbn10", Message: "ISBN 10 has already been used in other book."}}
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+
+	var existingBook model.Book
+	result := Db.Where("isbn_13 = ?", Isbn13).First(&existingBook)
+
+	if result.Error == gorm.ErrRecordNotFound || result.RowsAffected == 0 {
+		pageData.Message = "Cannot update the book."
+		
+		pageData.Errors = []model.ApiError{model.ApiError{Param: "ISBN 13", Message: "Book not found with the given ISBN 13."}}
+		
+		RenderPage(c, "/templates/books/result.html", pageData)
+		
+		return
+	}
+
+	if existingBook.Title != book.Title {
+		existingBook.Title = book.Title
+	}
+	
+	if existingBook.Isbn13 != book.Isbn13 {
+		existingBook.Isbn13 = book.Isbn13
+	}
+	
+	if existingBook.Isbn10 != book.Isbn10 {
+		existingBook.Isbn10 = book.Isbn10
+	}
+
+	if existingBook.PublicationYear != book.PublicationYear {
+		existingBook.PublicationYear = book.PublicationYear
+	}
+
+	if existingBook.PublisherID != book.PublisherID {
+		existingBook.PublisherID = book.PublisherID
+	}
+
+	if existingBook.ImageURL != book.ImageURL {
+		existingBook.ImageURL = book.ImageURL
+	}
+
+	if existingBook.Edition != book.Edition {
+		existingBook.Edition = book.Edition
+	}
+
+	if existingBook.ListPrice != book.ListPrice {
+		existingBook.ListPrice = book.ListPrice
+	}
+
+	// TODO Validate ISBN 13 or ISBN 10 first
+
+	Db.Transaction(func(tx *gorm.DB) error {
 	
 		if err := tx.Save(&existingBook).Error; err != nil {
 			return err
@@ -370,24 +416,10 @@ func UISubmitUpdateBookForm(c *gin.Context) {
 		return nil
 	})
 
-	if transactionErr != nil {
-		pageData.Message = "Cannot update Book." 
-		pageData.HasError = true
-	}
-
-	w := c.Writer
-	parsedIndexTemplate, err := template.ParseFiles(ExPath + "/templates/books/result.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(parsedIndexTemplate, err)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	if err := tmpl.Execute(w, pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
+	pageData.Message = "Successfully updated the book."
+		
+	RenderPage(c, "/templates/books/result.html", pageData)
+	
 	return
 }
 
@@ -404,7 +436,7 @@ func checkIfIDIsInExistingAuthorIDs(authorID uint64, bookAuthors []model.BookAut
 func UIViewBook(c *gin.Context) {
 	isbn_13 := c.Param("isbn_13")
 
-	var book BookDisplay
+	var book DisplayBook
 
 	Db.Table("books b").Select("b.id", "b.title", "GROUP_CONCAT(' ', CONCAT(a.first_name, ' ', IFNULL(a.middle_name, ''), ' ', a.last_name)) author", "b.isbn_13", "b.isbn_10", "b.publication_year", "p.name publisher_name", "b.edition", "b.list_price", "b.image_url").Joins("INNER JOIN book_authors ba ON b.id = ba.book_id").Joins("INNER JOIN authors a ON ba.author_id = a.id").Joins("INNER JOIN publishers p ON b.publisher_id = p.id").Where("b.isbn_13 = ?", isbn_13).Group("b.id").First(&book)
 
@@ -744,7 +776,7 @@ func AddBook(c *gin.Context) {
 	data["book"] = bookDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully added an Book",
+		Message: "Successfully added the Book",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
