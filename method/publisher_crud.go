@@ -127,7 +127,7 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 	pageData.Errors = FieldValidator(publisher)
 
 	if len(pageData.Errors) > 0 {
-		pageData.Message = "Cannot add the Publisher."
+		pageData.Message = "Cannot add the publisher."
 		RenderPage(c, "/templates/publishers/result.html", pageData)
 		return
 	}
@@ -141,7 +141,7 @@ func UISubmitAddPublisherForm(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot add the Publisher." 
+		pageData.Message = "Cannot add the publisher." 
 		RenderPage(c, "/templates/publishers/result.html", pageData)
 		return
 	}
@@ -174,7 +174,7 @@ func UISubmitUpdatePublisherForm(c *gin.Context) {
 
 	pageData.Errors = FieldValidator(publisher)
 	if len(pageData.Errors) > 0 {
-		pageData.Message = "Cannot update the Publisher."
+		pageData.Message = "Cannot update the publisher."
 
 		RenderPage(c, "/templates/publishers/result.html", pageData)
 
@@ -262,7 +262,7 @@ func UIDeletePublisher(c *gin.Context) {
 		return
 	}
 
-	pageData.Message = "Successfully deleted Publisher."
+	pageData.Message = "Successfully deleted publisher."
 
 	RenderPage(c, "/templates/publishers/result.html", pageData)
 
@@ -399,7 +399,7 @@ func AddPublisher(c *gin.Context) {
 	data["publisher"] = publisherDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully added the Publisher",
+		Message: "Successfully added the publisher.",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
@@ -459,7 +459,7 @@ func UpdatePublisher(c *gin.Context) {
 	data["publisher"] = publisherDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully updated the Publisher",
+		Message: "Successfully updated the publisher",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
@@ -498,7 +498,7 @@ func DeletePublisher(c *gin.Context) {
 		}
 
 		response := model.Response[map[string]string]{
-			Message: "Successfully deleted the publisher",
+			Message: "Successfully deleted the publisher.",
 			Count: result.RowsAffected,
 			Page: int64(1),
 		}

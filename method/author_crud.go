@@ -129,7 +129,7 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 	pageData.Errors = FieldValidator(author)
 
 	if len(pageData.Errors) > 0 {
-		pageData.Message = "Cannot add the Author."
+		pageData.Message = "Cannot add the author."
 		RenderPage(c, "/templates/authors/result.html", pageData)
 		return
 	}
@@ -143,7 +143,7 @@ func UISubmitAddAuthorForm(c *gin.Context) {
 	})
 
 	if transactionErr != nil {
-		pageData.Message = "Cannot add the Author." 
+		pageData.Message = "Cannot add the author." 
 		RenderPage(c, "/templates/authors/result.html", pageData)
 		return
 	}
@@ -177,7 +177,7 @@ func UISubmitUpdateAuthorForm(c *gin.Context) {
 
 	pageData.Errors = FieldValidator(author)
 	if len(pageData.Errors) > 0 {
-		pageData.Message = "Cannot update the Author."
+		pageData.Message = "Cannot update the author."
 
 		RenderPage(c, "/templates/authors/result.html", pageData)
 
@@ -273,7 +273,7 @@ func UIDeleteAuthor(c *gin.Context) {
 		return
 	}
 
-	pageData.Message = "Successfully deleted Author."
+	pageData.Message = "Successfully deleted author."
 
 	RenderPage(c, "/templates/authors/result.html", pageData)
 
@@ -480,7 +480,7 @@ func UpdateAuthor(c *gin.Context) {
 	data["author"] = authorDataJsonStr
 
 	response := model.Response[map[string]string]{
-		Message: "Successfully updated the Author",
+		Message: "Successfully updated the author.",
 		Count: 1,
 		Page: int64(1),
 		Data:	data,
