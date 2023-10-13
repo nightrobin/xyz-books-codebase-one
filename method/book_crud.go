@@ -1,6 +1,7 @@
 package method
 
 import(
+	"fmt"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -668,6 +669,13 @@ func AddBook(c *gin.Context) {
 		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Author ID(s) not valid."})
 	}
 
+	var countPublisher int64
+	Db.Table("publishers").Where("id = ?", book.PublisherID).Count(&countPublisher)
+
+	if countPublisher == 0 {
+		errors = append(errors, model.ApiError{Param:"PublisherID", Message: "Invalid Publisher ID"})
+	}
+
 	errors = append(errors, FieldValidator(book)...)
 
 	if errors != nil {
@@ -682,6 +690,7 @@ func AddBook(c *gin.Context) {
 	
 	Db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Table("books").Create(&book).Error; err != nil {
+			
 			return err
 		}
 
@@ -782,6 +791,12 @@ func UpdateBook(c *gin.Context) {
 		existingBook.AuthorIDs = book.AuthorIDs
 	}
 
+	var countPublisher int64
+	Db.Table("publishers").Where("id = ?", book.PublisherID).Count(&countPublisher)
+
+	if countPublisher == 0 {
+		errors = append(errors, model.ApiError{Param:"PublisherID", Message: "Invalid Publisher ID"})
+	}
 	
 	if existingBook.Title != book.Title && len(book.Title) > 0 {
 		existingBook.Title = book.Title
