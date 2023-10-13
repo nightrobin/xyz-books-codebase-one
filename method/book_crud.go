@@ -1,7 +1,7 @@
 package method
 
 import(
-	"fmt"
+	// "fmt"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -658,6 +658,10 @@ func AddBook(c *gin.Context) {
 	
 	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
 	
+	if len(book.AuthorIDs) == 0 {
+		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Atleast one valid Author ID is required."})
+	}
+
 	var countAuthor int64
 	authorIDsWhereString := string(authorIDsJson)
 	authorIDsWhereString = strings.Replace(authorIDsWhereString, "[", "(", 1)
@@ -775,6 +779,10 @@ func UpdateBook(c *gin.Context) {
 	}
 	
 	authorIDsJson, _ := json.Marshal(book.AuthorIDs)
+
+	if len(book.AuthorIDs) == 0 {
+		errors = append(errors, model.ApiError{Param:"AuthorIDs", Message: "Atleast one valid Author ID is required."})
+	}
 
 	if len(book.AuthorIDs) > 0 {
 		var countAuthor int64
